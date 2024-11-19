@@ -49,6 +49,14 @@ The query format is used to query data from the device.
 
 `query <object-type> [<index>]`
 
+Indexable object types are:
+
+- `pattern`
+- `kit`
+- `sound`
+- `sound_wb`
+- `global`
+
 Examples:
 
 - `query pattern 1`
@@ -145,12 +153,21 @@ Accepted formats:
 - `get kit_wb sound <sound-index 0..=11> <identifier> [<parameter>]`
 - `get kit_wb sound <sound-index 0..=11> <enum> [<parameter>]`
 
+Accepted kit elements (`<element>`)
+
+- `tracklevel`
+- `trackretrigrate`
+- `trackretriglen`
+- `trackretrigveloffset`
+- `trackretrigalwayson`
+- `sound`
+
 ### Sound
 
 Accepted formats:
 
-- `get sound <index 0..=11> <identifier> [<parameter>]`
-- `get sound <index 0..=11> <enum> [<parameter>]`
+- `get sound <index 0..=127> <identifier> [<parameter>]`
+- `get sound <index 0..=127> <enum> [<parameter>]`
 
 ### Sound work buffer
 
@@ -221,6 +238,7 @@ Accepted formats:
 - `set kit <index 0..=127> <identifier> <parameter>`
 - `set kit <index 0..=127> <enum>`
 - `set kit <index 0..=127> <element> <element-index> <enum>`
+- `set kit <index 0..=127> <element> <element-index> <parameter>`
 - `set kit <index 0..=127> sound <sound-index 0..=11> <identifier> <parameter> [<parameter>]`
 - `set kit <index 0..=127> sound <sound-index 0..=11> <enum> [<parameter>]`
 
@@ -231,6 +249,7 @@ Accepted formats:
 - `set kit_wb <identifier> <parameter>`
 - `set kit_wb <enum>`
 - `set kit_wb <element> <element-index> <enum>`
+- `set kit_wb <element> <element-index> <parameter>`
 - `set kit_wb sound <sound-index 0..=11> <identifier> <parameter> [<parameter>]`
 - `set kit_wb sound <sound-index 0..=11> <enum> [<parameter>]`
 
@@ -347,6 +366,15 @@ Accepted formats:
 - `fxdistsym` -> **int**, _-64..=63_
 - `fxdistdelpost` -> **int**, _0..=1_
 - `fxdistrevpost` -> **int**, _0..=1_
+
+### Elements
+
+- `tracklevel` -> **int**, _0..=127_
+  - kit element index range -> **int**, _0..=12_
+- `trackretrigveloffset` -> **int**, _-128..=127_
+  - kit element index range -> **int**, _0..=12_
+- `trackretrigalwayson` -> **int**, _0..=1_
+  - kit element index range -> **int**, _0..=12_
 
 ## Sound
 
@@ -747,6 +775,77 @@ Accepted formats:
 | -------- | ------- | ------ |
 | **off**  | **hpf** |        |
 | **lpf**  | **hit** |        |
+
+#### `fxdelaytimeonthegrid:`
+
+| Variants       | &nbsp;         | &nbsp;            |
+| -------------- | -------------- | ----------------- |
+| **128th**      | **16th**       | **quarterdotted** |
+| **64th**       | **16thdotted** | **half**          |
+| **64thdotted** | **8th**        | **halfdotted**    |
+| **32nd**       | **8thdotted**  | **whole**         |
+| **32nddotted** | **quarter**    |                   |
+
+### Elements
+
+#### `trackretrigrate:`
+
+| Variants | &nbsp;   | &nbsp;   |
+| -------- | -------- | -------- |
+| **1/1**  | **1/8**  | **1/32** |
+| **1/2**  | **1/10** | **1/40** |
+| **1/3**  | **1/12** | **1/48** |
+| **1/4**  | **1/16** | **1/64** |
+| **1/5**  | **1/20** | **1/80** |
+| **1/6**  | **1/24** |          |
+
+#### `trackretriglen:`
+
+| Variants  | &nbsp;   | &nbsp;    |
+| --------- | -------- | --------- |
+| **1/128** | **3.63** | **24**    |
+| **.188**  | **3.75** | **25**    |
+| **1/64**  | **3.88** | **26**    |
+| **.313**  | **1/4**  | **27**    |
+| **.375**  | **4.25** | **28**    |
+| **.438**  | **4.5**  | **29**    |
+| **1/32**  | **4.75** | **30**    |
+| **.563**  | **5**    | **31**    |
+| **.625**  | **5.25** | **32**    |
+| **.688**  | **5.5**  | **34**    |
+| **.75**   | **5.75** | **36**    |
+| **.813**  | **6**    | **38**    |
+| **.875**  | **6.25** | **40**    |
+| **.938**  | **6.5**  | **42**    |
+| **1/16**  | **6.75** | **44**    |
+| **1.06**  | **7**    | **46**    |
+| **1.13**  | **7.25** | **48**    |
+| **1.19**  | **7.5**  | **50**    |
+| **1.25**  | **7.75** | **52**    |
+| **1.31**  | **1/2**  | **54**    |
+| **1.38**  | **8.5**  | **56**    |
+| **1.44**  | **9**    | **58**    |
+| **1.5**   | **9.5**  | **60**    |
+| **1.56**  | **10**   | **62**    |
+| **1.63**  | **10.5** | **64**    |
+| **1.69**  | **11**   | **68**    |
+| **1.75**  | **11.5** | **72**    |
+| **1.81**  | **12**   | **76**    |
+| **1.88**  | **12.5** | **80**    |
+| **1.94**  | **13**   | **84**    |
+| **1/8**   | **13.5** | **88**    |
+| **2.13**  | **14**   | **92**    |
+| **2.25**  | **14.5** | **96**    |
+| **2.38**  | **15**   | **100**   |
+| **2.5**   | **15.5** | **104**   |
+| **2.63**  | **1/1**  | **108**   |
+| **2.75**  | **17**   | **112**   |
+| **2.88**  | **18**   | **116**   |
+| **3**     | **19**   | **120**   |
+| **3.13**  | **20**   | **124**   |
+| **3.25**  | **21**   | **128**   |
+| **3.38**  | **22**   | **inf**   |
+| **3.5**   | **23**   | **unset** |
 
 ## Sound
 

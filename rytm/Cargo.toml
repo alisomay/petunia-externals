@@ -1,0 +1,27 @@
+[package]
+name = "rytm"
+version = "0.1.0"
+authors = [ "Ali Somay <alisomay@runbox.com>" ]
+edition = "2021"
+
+[lib]
+name = "rytm"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Max 8.x SDK
+median = { git = "https://github.com/Cycling74/median", rev = "168bd8e01971cb263c94c12cabc49d75c461f761" }
+rytm-rs = { git = "https://github.com/alisomay/rytm-rs.git" }
+
+rytm-object = { path = "../rytm-object" }
+error-logger-macro = { path = "../error-logger-macro" }
+
+thiserror = "2"
+lazy_static = "1.4.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+tracing-core = "0.1"
+parking_lot = "0.12"
+tracing-error = "0.2"
+
+

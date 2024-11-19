@@ -1,19 +1,15 @@
-[package]
-name = "rytm"
-version = "0.1.0"
-authors = [ "Ali Somay <alisomay@runbox.com>" ]
-edition = "2018"
-
-[lib]
-name = "rytm"
-crate-type = ["cdylib"]
-
-[dependencies]
-median = { git = "https://github.com/Cycling74/median" }
-rytm-rs = "0.1"
-thiserror = "1.0.24"
-lazy_static = "1.4.0"
+[workspace]
+members = [
+    "rytm",
+    "rytm-object",
+    "error-logger-macro",
+]
+resolver = "2"
 
 [profile.release]
+strip = true
+opt-level = 2
 lto = true
 panic = "abort"
+
+# [workspace.dependencies]
