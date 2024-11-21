@@ -15,7 +15,7 @@ MAX_EXT_BASE_NAME = "${MAX_EXT_NAME}"
 PLATFORM_INSTALL_DIR = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "ERROR", mapping = { "macos" = "${HOME}/Documents/Max 8/Packages", windows = "${USERPROFILE}/Documents/Max 8/Packages" } }
 EXTERNAL_INSTALL_DIR = "${PLATFORM_INSTALL_DIR}/${MAX_PACKAGE_NAME}/externals/"
 PACKAGED_LIB_FILE_NAME = "${MAX_EXT_NAME}"
-PACKAGE_MEMBERS_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/package"
+PACKAGE_MEMBERS_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/${MAX_PACKAGE_NAME}"
 PACKAGE_MEMBERS_INSTALL_DIR = "${PLATFORM_INSTALL_DIR}/${MAX_PACKAGE_NAME}/"
 TARGET_TRIPLE = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 TARGET_TRIPLE_WINDOWS = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "x86_64-pc-windows-gnu", mapping = { "windows" = "x86_64-pc-windows-msvc" } }
@@ -248,7 +248,6 @@ script_runner = "@shell"
 script = '''
 cp "${CARGO_MAKE_WORKING_DIRECTORY}/README.md" "${PACKAGE_MEMBERS_DIR}/readme.md"
 cp "${CARGO_MAKE_WORKING_DIRECTORY}/LICENSE" "${PACKAGE_MEMBERS_DIR}/license.md"
-cp "${CARGO_MAKE_WORKING_DIRECTORY}/API_DOCS.md" "${PACKAGE_MEMBERS_DIR}/api-docs.md"
 '''
 
 
