@@ -1,7 +1,7 @@
-use std::sync::{atomic::{AtomicBool, AtomicIsize}, Arc};
+use std::{ffi::CString, sync::{atomic::{AtomicBool, AtomicIsize}, Arc}};
 
 use median::{
-    attr::{ AttrBuilder, AttrClip, AttrType, AttrValClip}, builder::MaxWrappedBuilder, class::Class, notify::Notification, object::MaxObj, wrapper::{MaxObjWrapped, MaxObjWrapper, ObjWrapped}
+    attr::{ AttrBuilder, AttrClip, AttrType, AttrValClip}, builder::MaxWrappedBuilder, class::Class, max_sys, notify::Notification, object::MaxObj, symbol::SymbolRef, wrapper::{MaxObjWrapped, MaxObjWrapper, ObjWrapped}
 };
 use rytm_rs::RytmProject;
 use tracing::{debug, info_span};
@@ -113,6 +113,33 @@ impl MaxObjWrapped<Self> for RytmExternal {
             .clip(AttrClip::Set(AttrValClip::MinMax(0.0, 127.0)))           
             .build().expect("Failed to build sysex_id attribute"),
         ).expect("Failed to add sysex_id attribute");
+
+        // Adding the save flag to the attribute
+        // Currently this is not possible with median so it is saved with the patcher.
+        
+        // c74_max_object.h is the source for this info.
+        // Mimicing this CLASS_ATTR_ATTR_PARSE(c,attrname,"save", c74::max::gensym("long"),flags,"1")
+
+        let attrname = CString::new("sysex_id").unwrap();
+        let attrname2 = CString::new("save").unwrap();
+        let parsestring = CString::new("1").unwrap();  
+        let type_ = SymbolRef::try_from("long").unwrap(); 
+
+        unsafe {
+            max_sys::class_attr_addattr_parse(
+                class.inner(), 
+                attrname.as_ptr(), 
+                attrname2.as_ptr(), 
+                type_.inner(),  
+                (max_sys::e_max_attrflags::ATTR_GET_DEFER_LOW | max_sys::e_max_attrflags::ATTR_SET_DEFER_LOW).into(), 
+                parsestring.as_ptr()
+            );
+
+            // Forget these, since they're heap allocations and we don't know how long they should live. It is in Max's hands now.
+            std::mem::forget(attrname);
+            std::mem::forget(attrname2);
+            std::mem::forget(parsestring);
+        }
 
         // Methods
       

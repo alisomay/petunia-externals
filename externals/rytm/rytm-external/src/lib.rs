@@ -83,6 +83,10 @@ impl RytmExternal {
     const SELECTOR_GET: &'static str = "get";
     const SELECTOR_LOG_LEVEL: &'static str = "loglevel";
 
+    // TODO: Add loading and saving of projects later on.
+    const _SELECTOR_LOAD: &'static str = "load";
+    const _SELECTOR_SAVE: &'static str = "save";
+
     pub fn int(&self, value: t_atom_long) -> Result<(), RytmExternalError> {
         tracing::subscriber::with_default(Arc::clone(&self.subscriber), || {
             self.root_span.in_scope(|| {

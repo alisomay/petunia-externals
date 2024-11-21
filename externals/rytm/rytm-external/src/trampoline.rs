@@ -58,9 +58,10 @@ impl RytmExternal {
         av: *mut t_atom,
     ) {
         median::attr::set(ac, av, |val: isize| {
-            WrapperWrapped::wrapped(wrapper)
-                .target_device_id
-                .store(val, Ordering::SeqCst);
+            let external = WrapperWrapped::wrapped(wrapper);
+            external.target_device_id.store(val, Ordering::SeqCst);
+            // Value is always valid because it is clamped.
+            external.inner.project.lock().set_device_id(val as u8);
         });
     }
 }

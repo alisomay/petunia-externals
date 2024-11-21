@@ -547,7 +547,7 @@ dependencies = [
 [[package]]
 name = "rytm-rs"
 version = "0.1.2"
-source = "git+https://github.com/alisomay/rytm-rs.git#d33a805ee8c121693f8aca0e04035539e19145dd"
+source = "git+https://github.com/alisomay/rytm-rs.git?branch=main#3cbba599d7e0b07ea649683e35307bb29dfb1928"
 dependencies = [
  "bitstream-io",
  "derivative",
