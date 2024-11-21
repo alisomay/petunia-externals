@@ -178,9 +178,11 @@ run_task = [
 
 [tasks.copy-all]
 private = true
-env = { "PACKAGE_DIR" = "${WORKSPACE_TARGET_DIR}/${PROFILE_DIR}/${MAX_PACKAGE_NAME}" }
+# target/debug/petunia
+# env = { "PACKAGE_DIR" = "${WORKSPACE_TARGET_DIR}/${PROFILE_DIR}/${MAX_PACKAGE_NAME}" }
+env = { "PACKAGE_DIR" = "${CARGO_MAKE_WORKING_DIRECTORY}/${MAX_PACKAGE_NAME}" }
 run_task = [
-    { name = ["extend-package-members", "copy-all-packages", "copy-all-package-members"], condition = { platforms = ["mac"] } },
+    { name = ["extend-package-members", "copy-all-packages"], condition = { platforms = ["mac"] } },
 ]
 
 [tasks.copy-all-packages]
@@ -193,15 +195,15 @@ cp -r ${WORKSPACE_TARGET_DIR}/${TARGET_TRIPLE_WINDOWS}/${PROFILE_DIR}/${MAX_EXT_
 echo PACKAGE_DIR=${PACKAGE_DIR}
 '''
 
-[tasks.copy-all-package-members]
-private = true
-condition = { files_exist = ["${PACKAGE_MEMBERS_DIR}/"] }
-script_runner = "@shell"
-script = '''
-mkdir -p ${PACKAGE_DIR}/
-rm -rf ${PACKAGE_DIR}/*
-cp -r ${PACKAGE_MEMBERS_DIR}/* "${PACKAGE_DIR}/"
-'''
+# [tasks.copy-all-package-members]
+# private = true
+# condition = { files_exist = ["${PACKAGE_MEMBERS_DIR}/"] }
+# script_runner = "@shell"
+# script = '''
+# mkdir -p ${PACKAGE_DIR}/
+# rm -rf ${PACKAGE_DIR}/*
+# cp -r ${PACKAGE_MEMBERS_DIR}/* "${PACKAGE_DIR}/"
+# '''
 
 [tasks.install.windows]
 clear = true

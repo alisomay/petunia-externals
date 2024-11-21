@@ -3,7 +3,7 @@ use rytm_rs::object::Global;
 use tracing::instrument;
 
 use crate::error::EnumError::InvalidEnumType;
-use crate::error::{GetError, IdentifierError, RytmObjectError};
+use crate::error::{number_or_set_error, GetError, IdentifierError, RytmObjectError, SetError};
 use crate::parse::types::{Number, ParsedValue};
 use crate::types::CommandType;
 use crate::value::RytmValue;
@@ -126,9 +126,9 @@ fn get_enum(
 
         TRACK_CHANNELS => {
             let Some(track_index) = value else {
-                return Err("Invalid getter format: trackchannels: should include an integer track index. Example: trackchannels:1".into());
+                return Err(GetError::InvalidFormat("trackchannels: should include an integer track index. Example: trackchannels:1".to_owned()).into());
             };
-            let track_index = track_index.parse::<usize>().map_err(|_| "Invalid getter format: trackchannels: should include an integer track index. Example: trackchannels:1")?;
+            let track_index = track_index.parse::<usize>().map_err(|_| GetError::InvalidFormat("trackchannels: should include an integer track index. Example: trackchannels:1".to_owned()))?;
 
             object
                 .midi_config()
@@ -174,9 +174,10 @@ fn get_action(
 
         ROUTE_TO_MAIN => {
             let Some(ParsedValue::Parameter(Number::Int(param))) = tokens.next() else {
-                return Err(
-                    "Invalid getter format: routetomain should be followed by an integer track index.".into(),
-                );
+                return Err(GetError::InvalidFormat(
+                    "routetomain should be followed by an integer track index.".to_owned(),
+                )
+                .into());
             };
 
             object
@@ -187,10 +188,10 @@ fn get_action(
 
         SEND_TO_FX => {
             let Some(ParsedValue::Parameter(Number::Int(param))) = tokens.next() else {
-                return Err(
-                    "Invalid getter format: sendtofx should be followed by a track index (integer)"
-                        .into(),
-                );
+                return Err(GetError::InvalidFormat(
+                    "sendtofx should be followed by a track index (integer)".to_owned(),
+                )
+                .into());
             };
 
             object.routing().is_track_sent_to_fx(*param as usize).into()
@@ -227,7 +228,7 @@ fn set_enum(
 ) -> Result<Response, RytmObjectError> {
     let enum_value = value
         .clone()
-        .ok_or_else(|| GetError::InvalidFormat("Enum value not provided".into()))?;
+        .ok_or_else(|| SetError::InvalidFormat("Enum value not provided".into()))?;
 
     use crate::api::global_enum_type::*;
     match variant {
@@ -294,7 +295,7 @@ fn set_enum(
         TRACK_CHANNELS => {
             let Some(ParsedValue::Parameter(Number::Int(param))) = tokens.next() else {
                 return Err(
-                    "Invalid setter format: trackchannels should be followed by an integer track index. Format: trackchannels:<channel> <track index>. Example: trackchannels:1 2".into(),
+                    SetError::InvalidFormat("trackchannels should be followed by an integer track index. Format: trackchannels:<channel> <track index>. Example: trackchannels:1 2".to_owned()).into(),
                 );
             };
 
@@ -335,9 +336,7 @@ fn set_action(
 ) -> Result<Response, RytmObjectError> {
     use crate::api::global_action_type::*;
 
-    let Some(ParsedValue::Parameter(param)) = tokens.next() else {
-        return Err("Allowed parameters are integers or floats.".into());
-    };
+    let param = number_or_set_error(tokens)?;
 
     match maybe_action.as_str() {
         KIT_RELOAD_ON_CHANGE => {

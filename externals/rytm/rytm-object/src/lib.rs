@@ -47,7 +47,7 @@ impl RytmObject {
     pub fn handle_sysex_byte(&self, byte: u8) -> Result<(), RytmObjectError> {
         if byte != Self::SYSEX_START && !self.buffering_sysex.load(Ordering::Acquire) {
             return Err(RytmObjectError::from(
-                "Invalid input: Rytm only understands SysEx messages. Please connect sysexin object to the Rytm inlet.",
+                "Rytm Error: Invalid input. Rytm only understands SysEx messages. Please connect sysexin object to the Rytm inlet.",
             ));
         }
 

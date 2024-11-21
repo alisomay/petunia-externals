@@ -2,6 +2,7 @@
 
 use median::{max_sys, outlet::SendValue, symbol::SymbolRef};
 use std::ffi::CString;
+use tracing::warn;
 
 /// For flushing data from an outlet serially.
 pub trait SerialSend {
@@ -14,7 +15,10 @@ impl SerialSend for Vec<u8> {
         for byte in self {
             outlet
                 .send(*byte as isize)
-                .inspect_err(|_| median::error!("Error sending to outlet due to stack overflow."))
+                .inspect_err(|_| {
+                    median::error!("Error sending to status outlet due to stack overflow.");
+                    warn!("Error sending to status outlet due to stack overflow.");
+                })
                 .ok();
         }
     }

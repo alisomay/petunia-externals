@@ -4,7 +4,7 @@ use tracing::instrument;
 
 use super::Response;
 use crate::error::EnumError::InvalidEnumType;
-use crate::error::{GetError, IdentifierError, RytmObjectError};
+use crate::error::{number_or_set_error, GetError, IdentifierError, RytmObjectError, SetError};
 use crate::parse::types::{Number, ParsedValue};
 use crate::types::CommandType;
 use crate::value::RytmValue;
@@ -84,10 +84,10 @@ fn get_action(
         SELECTED_PAGE => RytmValue::from(object.selected_page() as isize),
         MUTE => {
             let Some(ParsedValue::Parameter(Number::Int(param))) = tokens.next() else {
-                return Err(
-                    "Invalid getter format: mute should be followed by an integer sound index."
-                        .into(),
-                );
+                return Err(GetError::InvalidFormat(
+                    "mute should be followed by an integer sound index.".into(),
+                )
+                .into());
             };
             RytmValue::from(isize::from(object.is_sound_muted(*param as usize)?))
         }
@@ -112,7 +112,7 @@ fn set_enum(
 ) -> Result<Response, RytmObjectError> {
     let enum_value = value
         .clone()
-        .ok_or_else(|| GetError::InvalidFormat("Enum value not provided".into()))?;
+        .ok_or_else(|| SetError::InvalidFormat("Enum value not provided".into()))?;
 
     use crate::api::settings_enum_type::*;
     match variant {
@@ -149,9 +149,7 @@ fn set_action(
 ) -> Result<Response, RytmObjectError> {
     use crate::api::settings_action_type::*;
 
-    let Some(ParsedValue::Parameter(param)) = tokens.next() else {
-        return Err("Allowed parameters are integers or floats.".into());
-    };
+    let param = number_or_set_error(tokens)?;
 
     match maybe_action {
         BPM_PROJECT => {

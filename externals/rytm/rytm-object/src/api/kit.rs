@@ -294,9 +294,9 @@ fn get_enum(
                 2 => object.control_in_1_mod_target_3().into(),
                 3 => object.control_in_1_mod_target_4().into(),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for ctrlinmod1target."
-                    )
+                    return Err(GetError::InvalidRange(format!(
+                        "The index {other} is out of range for ctrlinmod1target."
+                    ))
                     .into())
                 }
             }
@@ -320,9 +320,9 @@ fn get_enum(
                 2 => object.control_in_2_mod_target_3().into(),
                 3 => object.control_in_2_mod_target_4().into(),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for ctrlinmod2target."
-                    )
+                    return Err(GetError::InvalidRange(format!(
+                        "The index {other} is out of range for ctrlinmod2target."
+                    ))
                     .into())
                 }
             }
@@ -362,9 +362,9 @@ fn get_action(
                 2 => (object.control_in_1_mod_amt_3()).into(),
                 3 => (object.control_in_1_mod_amt_4()).into(),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for ctrlinmod1amt."
-                    )
+                    return Err(GetError::InvalidRange(format!(
+                        "The index {other} is out of range for ctrlinmod1amt."
+                    ))
                     .into())
                 }
             }
@@ -379,9 +379,9 @@ fn get_action(
                 2 => (object.control_in_2_mod_amt_3()).into(),
                 3 => (object.control_in_2_mod_amt_4()).into(),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for ctrlinmod2amt."
-                    )
+                    return Err(GetError::InvalidRange(format!(
+                        "The index {other} is out of range for ctrlinmod2amt."
+                    ))
                     .into())
                 }
             }
@@ -452,9 +452,9 @@ fn set_enum(
                 2 => object.set_control_in_1_mod_target_3(enum_value.as_str().try_into()?),
                 3 => object.set_control_in_1_mod_target_4(enum_value.as_str().try_into()?),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for {CONTROL_IN_1_MOD_TARGET}."
-                    )
+                    return Err(SetError::InvalidRange(format!(
+                        "The index {other} is out of range for ctrlinmod1target."
+                    ))
                     .into())
                 }
             }
@@ -472,9 +472,9 @@ fn set_enum(
                 2 => object.set_control_in_2_mod_target_3(enum_value.as_str().try_into()?),
                 3 => object.set_control_in_2_mod_target_4(enum_value.as_str().try_into()?),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for {CONTROL_IN_2_MOD_TARGET}."
-                    )
+                    return Err(SetError::InvalidRange(format!(
+                        "The index {other} is out of range for ctrlinmod2target."
+                    ))
                     .into())
                 }
             }
@@ -517,16 +517,19 @@ fn set_action(
     if action == NAME {
         if let Some(ParsedValue::ParameterString(name)) = tokens.next() {
             if name.is_empty() {
-                return Err("Invalid parameter: name must not be empty.".into());
+                return Err(SetError::InvalidFormat(
+                    "Invalid parameter: name must not be empty.".into(),
+                )
+                .into());
             }
             object.set_name(name)?;
             return Ok(Response::Ok);
         }
-        return Err("Invalid parameter: name must be a symbol with maximum 15 characters long and use only ascii characters.".into());
+        return Err(SetError::InvalidFormat("Invalid parameter: name must be a symbol with maximum 15 characters long and use only ascii characters.".into()).into());
     }
 
     let Some(ParsedValue::Parameter(param)) = tokens.next() else {
-        return Err("Allowed parameters are integers or floats or a symbol if you'd like to change the name of the kit.".into());
+        return Err(SetError::InvalidFormat("Allowed parameters are integers or floats or a symbol if you'd like to change the name of the kit.".into()).into());
     };
 
     match action {
@@ -543,9 +546,9 @@ fn set_action(
                 2 => object.set_control_in_1_mod_amt_3(*amount)?,
                 3 => object.set_control_in_1_mod_amt_4(*amount)?,
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for ctrlinmod1amt."
-                    )
+                    return Err(SetError::InvalidRange(format!(
+                        "The index {other} is out of range for ctrlinmod1amt."
+                    ))
                     .into())
                 }
             }
@@ -564,9 +567,9 @@ fn set_action(
                 2 => object.set_control_in_2_mod_amt_3(*amount)?,
                 3 => object.set_control_in_2_mod_amt_4(*amount)?,
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for ctrlinmod2amt."
-                    )
+                    return Err(SetError::InvalidRange(format!(
+                        "The index {other} is out of range for ctrlinmod2amt."
+                    ))
                     .into())
                 }
             }

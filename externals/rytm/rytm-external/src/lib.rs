@@ -91,7 +91,7 @@ impl RytmExternal {
                 let _inlet_index = median::inlet::Proxy::get_inlet(self.max_obj());
                 let byte = u8::try_from(value).map_err(|_| {
                     RytmExternalError::from(
-                        "Invalid input: rytm only understands sysex messages. Please connect sysexin object to the rytm inlet to make sure you pass in only sysex messages.",
+                        "Rytm Error: Invalid input. rytm only understands sysex messages. Please connect sysexin object to the rytm inlet to make sure you pass in only sysex messages.",
                     )}).inspect_err(
                         |err| {
                             error!("{}", err);
@@ -118,13 +118,19 @@ impl RytmExternal {
                          RytmExternalError::Custom(err.to_string())
                     })?;
 
+                let possible_selectors = [Self::SELECTOR_QUERY,
+                        Self::SELECTOR_SEND,
+                        Self::SELECTOR_SET,
+                        Self::SELECTOR_GET,
+                        Self::SELECTOR_LOG_LEVEL].join(", ");
+                
                 match selector.as_str() {
                     Self::SELECTOR_QUERY => self.query(atoms),
                     Self::SELECTOR_SEND => self.send(atoms),
                     Self::SELECTOR_SET => self.set(atoms),
                     Self::SELECTOR_GET => self.get(atoms),
                     Self::SELECTOR_LOG_LEVEL => self.change_log_level(atoms),
-                    _ => Err(format!("Invalid selector: {selector}. Possible selectors are query, send, set, get, debug.").into()),
+                    _ => Err(format!("Parse Error: Invalid command type {selector}. Possible commands are {possible_selectors}.").into()),
                 }.inspect_err(|_| {
                     if selector.as_str() != Self::SELECTOR_LOG_LEVEL {
                         self.send_status_error();
@@ -141,13 +147,13 @@ impl RytmExternal {
         if values.len() != 1 {
             self.send_status_error();
             return Err(RytmExternalError::from(
-                "Invalid format: Only one symbol is allowed for changing the log level.",
+                "Command Error: Invalid format. Only one symbol is allowed for changing the log level.",
             ));
         }
         let Some(RytmValue::Symbol(maybe_level)) = values.first() else {
             self.send_status_error();
             return Err(RytmExternalError::from(
-                "Invalid format: Only one symbol is allowed for changing the log level.",
+                "Command Error: Invalid format. Only one symbol is allowed for changing the log level.",
             ));
         };
 
@@ -160,7 +166,7 @@ impl RytmExternal {
             _ => {
                 self.send_status_error();
                 return Err(RytmExternalError::from(
-                    "Invalid format: Only one symbol is allowed for changing the log level. It needs to be either error, warn, info, debug or trace.",
+                    "Command Error: Invalid format. Only one symbol is allowed for changing the log level. It needs to be either error, warn, info, debug or trace.",
                 ));
             }
         };
@@ -184,12 +190,12 @@ impl RytmExternal {
 
         let device_id =
             u8::try_from(self.target_device_id.load(Ordering::SeqCst)).map_err(|_| {
-                RytmExternalError::from("Invalid device id: Device id should be between 0 and 127.")
+                RytmExternalError::from("Query Error: Invalid device id. Device id should be between 0 and 127.")
             })?;
 
         if device_id > 127 {
             return Err(RytmExternalError::from(
-                "Invalid device id: Device id should be between 0 and 127.",
+                "Query Error: Invalid device id. Device id should be between 0 and 127.",
             ));
         }
 
@@ -237,7 +243,7 @@ impl RytmExternal {
     ) -> Result<rytm_object::value::RytmValueList, RytmExternalError> {
         atoms.try_into().map_err(|()| {
             RytmExternalError::from(
-                "Invalid format: Rytm object only accepts a list of integers floats or symbols",
+                "Rytm Error: Invalid data type. Rytm object only accepts a list of integers floats or symbols",
             )
         })
     }

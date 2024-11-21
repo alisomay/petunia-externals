@@ -3,8 +3,10 @@ use crate::api::kit_enum_type;
 use crate::api::sound_action_type;
 use crate::api::sound_enum_type;
 use crate::error::EnumError::InvalidEnumType;
+use crate::error::GetError;
 use crate::error::IdentifierError;
 use crate::error::RytmObjectError;
+use crate::error::SetError;
 use crate::parse::types::{ParsedValue, PlockOperation};
 use crate::types::CommandType;
 use crate::value::RytmValue;
@@ -29,21 +31,21 @@ pub fn handle_plock_commands(
         PlockOperation::Clear => {
             if command_type == CommandType::Get {
                 return Err(
-               format!("Invalid format: A get command can not be followed by a {op} command. Please try {} or use a set command.", PlockOperation::Get).into()
+                GetError::InvalidFormat(format!("A get command can not be followed by a {op} command. Please try {} or use a set command.", PlockOperation::Get)).into()
             );
             }
         }
         PlockOperation::Get => {
             if command_type == CommandType::Set {
                 return Err(
-                format!("Invalid format: A set command can not be followed by a {op} command. Please try {} or {} or use a get command.", PlockOperation::Set, PlockOperation::Clear).into()
+                SetError::InvalidFormat(format!("A set command can not be followed by a {op} command. Please try {} or {} or use a get command.", PlockOperation::Set, PlockOperation::Clear)).into()
             );
             }
         }
         PlockOperation::Set => {
             if command_type == CommandType::Get {
                 return Err(
-                format!("Invalid format: A get command can not be followed by a {op} command. Please try {} or use a set command.", PlockOperation::Get).into()
+                GetError::InvalidFormat(format!("A get command can not be followed by a {op} command. Please try {} or use a set command.", PlockOperation::Get)).into()
             );
             }
         }
@@ -276,10 +278,10 @@ pub fn handle_plock_commands(
             match tokens.next() {
                 Some(ParsedValue::Identifier(ident)) => {
                     let Some(ParsedValue::Parameter(param)) = tokens.next() else {
-                        return Err(
-                            "Invalid format: A parameter or enum should follow a plockset action."
-                                .into(),
-                        );
+                        return Err(SetError::InvalidFormat(
+                            "A parameter or enum should follow a plockset action.".into(),
+                        )
+                        .into());
                     };
 
                     match ident.as_str() {

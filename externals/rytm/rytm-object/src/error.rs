@@ -1,73 +1,80 @@
 use median::max_sys;
 use rytm_rs::error::RytmError;
 
+use crate::parse::types::{Number, ParsedValue};
+
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub enum ParseError {
-    #[error("Invalid command type: {0}. Currently supported commands are: get and set.")]
+    #[error(
+        "Parse Error: Invalid command type {0}. Currently supported commands are: get and set."
+    )]
     InvalidCommandType(String),
-    #[error("todo")]
+    #[error("Parse Error: Expected a symbol but got {0}.")]
     ExpectedSymbol(String),
-    #[error("The command has an unexpected end. Expected either an identifier or enum value.")]
+    #[error("Parse Error: The command has an unexpected end. Expected either an identifier or enum value.")]
     UnexpectedEnd,
-    #[error("{0}")]
+    #[error("Parse Error: {0}")]
     InvalidToken(String),
-    #[error("{0}")]
+    #[error("Parse Error: {0}")]
     InvalidFormat(String),
-    #[error("{0}")]
+    #[error("Parse Error: {0}")]
     ExpectedKitElementIndex(String),
-    #[error("{0}")]
+    #[error("Parse Error: {0}")]
     IndexOutOfRange(String),
-    #[error("Invalid index type: Index must be an integer.")]
+    #[error("Parse Error: Invalid index type. Index must be an integer.")]
     InvalidIndexType,
     // TODO: Maybe unify this error with IndexOutOfRange later?
-    #[error("Invalid index range: Index {value} must be between {min} and {max} and an integer.")]
+    #[error("Parse Error: Invalid index range: Index {value} must be between {min} and {max} and an integer.")]
     InvalidIndexRange {
         min: isize,
         max: isize,
         value: isize,
     },
-    #[error("Invalid query selector: Query selector must be one of pattern, pattern_wb, kit, kit_wb, global, global_wb, sound, sound_wb or settings.")]
+    #[error("Parse Error: Invalid query selector. Query selector must be one of pattern, pattern_wb, kit, kit_wb, global, global_wb, sound, sound_wb or settings.")]
     InvalidSelector,
-    #[error("Query selector missing: The command must be followed by a query selector. Query selector must be one of pattern, pattern_wb, kit, kit_wb, global, global_wb, sound, sound_wb or settings.")]
+    #[error("Parse Error: Query selector missing. The command must be followed by a query selector. Query selector must be one of pattern, pattern_wb, kit, kit_wb, global, global_wb, sound, sound_wb or settings.")]
     QuerySelectorMissing,
     #[error(
-        "Query selector index missing or invalid: This query selector must be followed by an integer index."
+        "Parse Error: Query selector index missing or invalid: This query selector must be followed by an integer index."
     )]
     QuerySelectorIndexMissingOrInvalid,
 
-    #[error("Parameter lock operation {0} is invalid. {1}")]
+    #[error("Parse Error: Parameter lock operation {0} is invalid. {1}")]
     InvalidPlockOperation(String, String),
-    #[error("Invalid query format: The right format should be, <selector> [<index>]. Example: query pattern_wb or query pattern 0")]
+    #[error("Parse Error: Invalid query format. The right format should be, <selector> [<index>]. Example: query pattern_wb or query pattern 0")]
     InvalidQueryFormat,
 }
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub enum QueryError {
-    #[error("Invalid query selector: Query selector must be one of pattern, pattern_wb, kit, kit_wb, global, global_wb, sound, sound_wb or settings.")]
+    #[error("Query Error: Invalid query selector. Query selector must be one of pattern, pattern_wb, kit, kit_wb, global, global_wb, sound, sound_wb or settings.")]
     InvalidSelector,
-    #[error("Invalid query format: The right format should be, <selector> [<index>]. Example: query pattern_wb or query pattern 0")]
+    #[error("Query Error: Invalid query format. The right format should be, <selector> [<index>]. Example: query pattern_wb or query pattern 0")]
     InvalidFormat,
-    #[error("Invalid index type: Index must be an integer.")]
+    #[error("Query Error: Invalid index type. Index must be an integer.")]
     InvalidIndexType,
 }
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub enum SendError {
-    #[error("Invalid send format: The right format should be, <selector> [<index>]. Example: send pattern_wb or send pattern 0.")]
+    #[error("Send Error: Invalid send format. The right format should be, <selector> [<index>]. Example: send pattern_wb or send pattern 0.")]
     InvalidFormat,
 }
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub enum GetError {
-    #[error("Invalid getter format: {0}")]
+    #[error("Invalid getter format. {0}")]
     InvalidFormat(String),
 
+    #[error("Invalid getter range. {0}")]
+    InvalidRange(String),
+
     #[error(
-        "Invalid getter format: \"{0}\".
+        "Invalid getter format. \"{0}\".
         Accepted formats:
             get sound <index> <identifier> [<parameter>]  
             get sound <index> <enum> [<parameter>]"
@@ -75,7 +82,7 @@ pub enum GetError {
     InvalidSoundGetterFormat(String),
 
     #[error(
-        "Invalid getter format: \"{0}\".
+        "Invalid getter format. \"{0}\".
         Accepted formats:
             get settings <identifier> [<parameter>]  
             get settings <enum>"
@@ -83,14 +90,14 @@ pub enum GetError {
     InvalidSettingsGetterFormat(String),
 
     #[error(
-        "Invalid getter format: \"{0}\".
+        "Invalid getter format. \"{0}\".
         Accepted formats:
             get global <index> <identifier> [<parameter>]  
             get global <index> <enum>"
     )]
     InvalidGlobalGetterFormat(String),
     #[error(
-        "Invalid getter format: \"{0}\".
+        "Invalid getter format. \"{0}\".
         Accepted formats:
             get global_wb <identifier> [<parameter>] 
             get global_wb <enum>"
@@ -98,7 +105,7 @@ pub enum GetError {
     InvalidGlobalWbGetterFormat(String),
 
     #[error(
-        "Invalid getter format: \"{0}\".
+        "Invalid getter format. \"{0}\".
         Accepted formats:
             get kit <index> <identifier>
             get kit <index> <enum> 
@@ -108,7 +115,7 @@ pub enum GetError {
     )]
     InvalidKitGetterFormat(String),
     #[error(
-        "Invalid getter format: \"{0}\".
+        "Invalid getter format. \"{0}\".
         Accepted formats:
             get kit_wb <identifier> 
             get kit_wb <enum> 
@@ -119,7 +126,7 @@ pub enum GetError {
     InvalidKitWbGetterFormat(String),
 
     #[error(
-        "Invalid getter format: \"{0}\".
+        "Invalid getter format. \"{0}\".
         Accepted formats:
             get pattern <index> <identifier> 
             get pattern <index> <enum>  
@@ -133,7 +140,7 @@ pub enum GetError {
     InvalidPatternGetterFormat(String),
 
     #[error(
-        "Invalid getter format: \"{0}\".
+        "Invalid getter format. \"{0}\".
         Accepted formats:
             get pattern_wb <identifier> 
             get pattern_wb <enum>  
@@ -150,11 +157,14 @@ pub enum GetError {
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub enum SetError {
-    #[error("Invalid setter format: {0}")]
+    #[error("Invalid setter format. {0}")]
     InvalidFormat(String),
 
+    #[error("Invalid setter range. {0}")]
+    InvalidRange(String),
+
     #[error(
-        "Invalid setter format: \"{0}\".
+        "Invalid setter format. \"{0}\".
         Accepted formats:
             set sound <index> <identifier> <parameter> [<parameter>]
             set sound <index> <enum> [<parameter>]"
@@ -162,7 +172,7 @@ pub enum SetError {
     InvalidSoundSetterFormat(String),
 
     #[error(
-        "Invalid setter format: \"{0}\".
+        "Invalid setter format. \"{0}\".
         Accepted formats:
             set settings <identifier> <parameter>, 
             set settings <enum>"
@@ -170,14 +180,14 @@ pub enum SetError {
     InvalidSettingsSetterFormat(String),
 
     #[error(
-        "Invalid setter format: \"{0}\".
+        "Invalid setter format. \"{0}\".
         Accepted formats:
             set global <index> <identifier> <parameter>
             set global <index> <enum> [<parameter>]"
     )]
     InvalidGlobalSetterFormat(String),
     #[error(
-        "Invalid setter format: \"{0}\".
+        "Invalid setter format. \"{0}\".
         Accepted formats:
             set global_wb <identifier> <parameter>
             set global_wb <enum> [<parameter>]"
@@ -185,7 +195,7 @@ pub enum SetError {
     InvalidGlobalWbSetterFormat(String),
 
     #[error(
-        "Invalid setter format: \"{0}\".
+        "Invalid setter format. \"{0}\".
         Accepted formats:
             set kit <index> <identifier> <parameter>
             set kit <index> <enum> 
@@ -195,7 +205,7 @@ pub enum SetError {
     )]
     InvalidKitSetterFormat(String),
     #[error(
-        "Invalid setter format: \"{0}\".
+        "Invalid setter format. \"{0}\".
         Accepted formats:
             set kit <identifier> <parameter>
             set kit <enum> 
@@ -206,7 +216,7 @@ pub enum SetError {
     InvalidKitWbSetterFormat(String),
 
     #[error(
-        "Invalid setter format: \"{0}\".
+        "Invalid setter format. \"{0}\".
         Accepted formats:
             set pattern <index> <identifier> <parameter>
             set pattern <index> <enum>  
@@ -222,7 +232,7 @@ pub enum SetError {
     InvalidPatternSetterFormat(String),
 
     #[error(
-        "Invalid setter format: \"{0}\".
+        "Invalid setter format. \"{0}\".
         Accepted formats:
             get pattern_wb <identifier> <parameter>
             get pattern_wb <enum>  
@@ -241,16 +251,16 @@ pub enum SetError {
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub enum EnumError {
-    #[error("Invalid enum type: {0}")]
+    #[error("Enum Error: Invalid enum type. {0}")]
     InvalidEnumType(String),
 }
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]
 pub enum IdentifierError {
-    #[error("Invalid identifier type: {0}")]
+    #[error("Identifier Error: Invalid identifier type. {0}")]
     InvalidType(String),
-    #[error("Invalid parameter following {1}: {0}")]
+    #[error("Identifier Error: Invalid parameter following {1}. {0}")]
     InvalidParameter(String, String),
 }
 
@@ -279,7 +289,7 @@ pub enum RytmObjectError {
     #[error(transparent)]
     Parse(#[from] ParseError),
 
-    #[error("Not implemented, if you need this api open an issue in https://github.com/alisomay/rytm-external.")]
+    #[error("Not implemented, if you need this api open an issue in https://github.com/alisomay/petunia-externals.")]
     NotYetImplemented,
 }
 
@@ -307,16 +317,14 @@ impl RytmObjectError {
             Self::Custom(err) => median::object::error(obj, err.to_string()),
             Self::Query(err) => median::object::error(obj, err.to_string()),
             Self::Send(err) => median::object::error(obj, err.to_string()),
-            Self::Get(err) => median::object::error(obj, err.to_string()),
-            Self::Set(err) => median::object::error(obj, err.to_string()),
+            Self::Get(err) => median::object::error(obj, format!("Command Error: {}", err)),
+            Self::Set(err) => median::object::error(obj, format!("Command Error: {}", err)),
             Self::Enum(err) => median::object::error(obj, err.to_string()),
             Self::Identifier(err) => median::object::error(obj, err.to_string()),
             Self::RytmSdk(err) => median::object::error(obj, err.to_string()),
             Self::StringConversionError(err) => median::object::error(obj, err.to_string()),
             Self::Parse(err) => median::object::error(obj, err.to_string()),
-            Self::NotYetImplemented => {
-                median::object::error(obj, "Not yet implemented.".to_string());
-            }
+            Self::NotYetImplemented => median::object::error(obj, self.to_string()),
         }
     }
 
@@ -332,7 +340,20 @@ impl RytmObjectError {
             Self::RytmSdk(err) => median::error(err.to_string()),
             Self::StringConversionError(err) => median::error(err.to_string()),
             Self::Parse(err) => median::error(err.to_string()),
-            Self::NotYetImplemented => median::error("Not yet implemented.".to_string()),
+            Self::NotYetImplemented => median::error(self.to_string()),
         }
     }
+}
+
+pub fn number_or_set_error(
+    tokens: &mut std::slice::Iter<ParsedValue>,
+) -> Result<Number, RytmObjectError> {
+    let Some(ParsedValue::Parameter(param)) = tokens.next() else {
+        return Err(SetError::InvalidFormat(
+            "Invalid parameter. Allowed parameters are only integers or floats.".into(),
+        )
+        .into());
+    };
+
+    Ok(param.to_owned())
 }

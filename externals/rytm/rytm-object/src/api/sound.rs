@@ -62,7 +62,7 @@ pub fn handle(
                     &guard.as_ref().unwrap().work_buffer().sounds()[index]
                 }
                 SoundSource::Kit(kit) => &kit.sounds()[index],
-                _ => panic!("Do not use SoundSource::KitMut for get."),
+                _ => panic!("Do not use SoundSource::KitMut for get in the codebase."),
             };
 
             match next_token {
@@ -94,7 +94,7 @@ pub fn handle(
                     &mut guard.as_mut().unwrap().work_buffer_mut().sounds_mut()[index]
                 }
                 SoundSource::KitMut(kit) => &mut kit.sounds_mut()[index],
-                _ => panic!("Do not use SoundSource::Kit for set."),
+                _ => panic!("Do not use SoundSource::Kit for set in the codebase."),
             };
 
             match next_token {
@@ -139,9 +139,9 @@ fn get_enum(
                 2 => object.settings().velocity_modulation_target_3().into(),
                 3 => object.settings().velocity_modulation_target_4().into(),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for velmodtarget."
-                    )
+                    return Err(GetError::InvalidRange(format!(
+                        "The index {other} is out of range for velmodtarget."
+                    ))
                     .into())
                 }
             }
@@ -163,9 +163,9 @@ fn get_enum(
                 2 => object.settings().after_touch_modulation_target_3().into(),
                 3 => object.settings().after_touch_modulation_target_4().into(),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for atmodtarget."
-                    )
+                    return Err(GetError::InvalidRange(format!(
+                        "The index {other} is out of range for atmodtarget."
+                    ))
                     .into())
                 }
             }
@@ -225,7 +225,10 @@ fn get_action(
 
         VEL_MOD_AMT => {
             let Some(ParsedValue::Parameter(Number::Int(index))) = tokens.next() else {
-                return Err("velmodamt should be followed by an index.".into());
+                return Err(GetError::InvalidFormat(
+                    "velmodamt should be followed by an index.".into(),
+                )
+                .into());
             };
             match *index as usize {
                 0 => (object.settings().velocity_modulation_amt_1()).into(),
@@ -233,9 +236,9 @@ fn get_action(
                 2 => (object.settings().velocity_modulation_amt_3()).into(),
                 3 => (object.settings().velocity_modulation_amt_4()).into(),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for velmodamt."
-                    )
+                    return Err(GetError::InvalidRange(format!(
+                        "The index {other} is out of range for velmodamt."
+                    ))
                     .into())
                 }
             }
@@ -243,7 +246,10 @@ fn get_action(
 
         AT_MOD_AMT => {
             let Some(ParsedValue::Parameter(Number::Int(index))) = tokens.next() else {
-                return Err("atmodamt should be followed by an integer index.".into());
+                return Err(GetError::InvalidFormat(
+                    "atmodamt should be followed by an index.".into(),
+                )
+                .into());
             };
             match *index as usize {
                 0 => (object.settings().after_touch_modulation_amt_1()).into(),
@@ -251,9 +257,9 @@ fn get_action(
                 2 => (object.settings().after_touch_modulation_amt_3()).into(),
                 3 => (object.settings().after_touch_modulation_amt_4()).into(),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for atmodamt."
-                    )
+                    return Err(GetError::InvalidRange(format!(
+                        "The index {other} is out of range for atmodamt."
+                    ))
                     .into())
                 }
             }
@@ -316,9 +322,9 @@ fn set_enum(
                     .settings_mut()
                     .set_velocity_modulation_target_4(enum_value.as_str().try_into()?),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for velmodtarget."
-                    )
+                    return Err(SetError::InvalidRange(format!(
+                        "The index {other} is out of range for velmodtarget."
+                    ))
                     .into())
                 }
             }
@@ -344,9 +350,9 @@ fn set_enum(
                     .settings_mut()
                     .set_after_touch_modulation_target_4(enum_value.as_str().try_into()?),
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for atmodtarget."
-                    )
+                    return Err(SetError::InvalidRange(format!(
+                        "The index {other} is out of range for atmodtarget."
+                    ))
                     .into())
                 }
             }
@@ -392,16 +398,19 @@ fn set_action(
     if action == NAME {
         if let Some(ParsedValue::ParameterString(name)) = tokens.next() {
             if name.is_empty() {
-                return Err("Invalid parameter: name must not be empty.".into());
+                return Err(SetError::InvalidFormat(
+                    "Invalid parameter. name must not be empty.".into(),
+                )
+                .into());
             }
             object.set_name(name)?;
             return Ok(Response::Ok);
         }
-        return Err("Invalid parameter: name must be a symbol with maximum 15 characters long and use only ascii characters.".into());
+        return Err(SetError::InvalidFormat("Invalid parameter. name must be a symbol with maximum 15 characters long and use only ascii characters.".into()).into());
     }
 
     let Some(ParsedValue::Parameter(param)) = tokens.next() else {
-        return Err("Allowed parameters are integers or floats or a symbol if you'd like to change the name of the sound.".into());
+        return Err(SetError::InvalidFormat("Invalid parameter. Allowed parameters are integers or floats or a symbol if you'd like to change the name of the sound.".into()).into());
     };
 
     match action {
@@ -533,9 +542,9 @@ fn set_action(
                     .settings_mut()
                     .set_velocity_modulation_amt_4(*amount)?,
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for velmodamt."
-                    )
+                    return Err(SetError::InvalidRange(format!(
+                        "The index {other} is out of range for velmodamt."
+                    ))
                     .into())
                 }
             }
@@ -562,9 +571,9 @@ fn set_action(
                     .settings_mut()
                     .set_after_touch_modulation_amt_4(*amount)?,
                 other => {
-                    return Err(format!(
-                        "Invalid range: The index {other} is out of range for atmodamt."
-                    )
+                    return Err(SetError::InvalidRange(format!(
+                        "The index {other} is out of range for atmodamt."
+                    ))
                     .into())
                 }
             }

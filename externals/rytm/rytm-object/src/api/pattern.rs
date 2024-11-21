@@ -6,7 +6,7 @@ use rytm_rs::object::Pattern;
 use tracing::instrument;
 
 use crate::error::EnumError::InvalidEnumType;
-use crate::error::{GetError, IdentifierError, RytmObjectError};
+use crate::error::{number_or_set_error, GetError, IdentifierError, RytmObjectError};
 use crate::parse::types::ParsedValue;
 use crate::types::CommandType;
 use crate::value::RytmValue;
@@ -358,9 +358,7 @@ fn pattern_set_action(
 ) -> Result<Response, RytmObjectError> {
     use crate::api::pattern_action_type::*;
 
-    let Some(ParsedValue::Parameter(param)) = tokens.next() else {
-        return Err("Allowed parameters are integers or floats.".into());
-    };
+    let param = number_or_set_error(tokens)?;
 
     match maybe_action {
         MASTER_LENGTH => {
@@ -416,9 +414,7 @@ fn track_set_action(
 ) -> Result<Response, RytmObjectError> {
     use crate::api::track_action_type::*;
 
-    let Some(ParsedValue::Parameter(param)) = tokens.next() else {
-        return Err("Allowed parameters are integers or floats.".into());
-    };
+    let param = number_or_set_error(tokens)?;
 
     match maybe_action {
         DEF_TRIG_NOTE => {
@@ -494,9 +490,7 @@ fn trig_set_action(
 ) -> Result<Response, RytmObjectError> {
     use crate::api::trig_action_type::*;
 
-    let Some(ParsedValue::Parameter(param)) = tokens.next() else {
-        return Err("Allowed parameters are integers or floats.".into());
-    };
+    let param = number_or_set_error(tokens)?;
 
     match maybe_action {
         ENABLE => {
