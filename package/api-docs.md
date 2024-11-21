@@ -22,6 +22,8 @@ When using the following identifiers and enums with some getters and setters the
 
 For these, please follow common sense and read the errors in the max window, they will guide you to the right direction.
 
+Also do not forget to check the max help files and max reference for the `rytm` external.
+
 - `<selector>` A symbol which defines an operation. Available selectors are:
   - `query` Queries the device for data.
   - `send` Sends data to the device.

@@ -23,34 +23,32 @@ pub mod tracing_setup;
 pub mod traits;
 pub mod trampoline;
 
+use std::sync::atomic::{AtomicIsize, Ordering};
 use std::sync::Arc;
 
 use crate::error::RytmExternalError;
 use crate::traits::Post;
 use error_logger_macro::log_errors;
-use median::atom::AtomValue;
 use median::outlet::{OutAnything, SendError};
+use median::wrapper::MaxObjWrapper;
 use median::{atom::Atom, max_sys::t_atom_long, object::MaxObj, outlet::OutInt, symbol::SymbolRef};
 use rytm_object::api::Response;
 use rytm_object::types::CommandType;
 use rytm_object::value::RytmValue;
 use rytm_object::RytmObject;
-use tracing::error;
+use tracing::span::EnteredSpan;
+use tracing::{error, info_span};
 use tracing::{info, instrument, warn};
 use tracing_setup::{get_default_env_filter, LoggingState};
 use tracing_subscriber::{reload, EnvFilter};
 use traits::SerialSend;
 
-// Should be only set through the debug 1 or debug 0 messages.
-// Should be only set from one place in the code, no other functions or threads.
-// Make sure that no other code is accessing this variable while it is being set.
-// Anything other than that is undefined behavior.
-pub static mut RYTM_EXTERNAL_DEBUG: bool = true;
-
 // This is the entry point for the Max external
 #[no_mangle]
 pub unsafe extern "C" fn ext_main(_r: *mut ::std::ffi::c_void) {
-    // Register your wrapped class with Max
+    // Call order 1
+
+    // Register wrapped class with Max
     if std::panic::catch_unwind(|| RytmExternal::register()).is_err() {
         std::process::exit(1);
     }
@@ -60,112 +58,94 @@ pub type ReloadHandle = reload::Handle<EnvFilter, tracing_subscriber::Registry>;
 
 // This is the actual object (external)
 pub struct RytmExternal {
+    /// Sysex device id
+    pub target_device_id: AtomicIsize,
+    pub root_span: EnteredSpan,
+    pub subscriber: Arc<dyn tracing::Subscriber + Send + Sync + 'static>,
     pub sysex_out: OutInt,
     pub query_out: OutAnything,
+    pub status_out: OutInt,
     pub inner: rytm_object::RytmObject,
     pub logging_state: Arc<LoggingState>,
-}
-
-// The main trait for your object
-impl median::wrapper::ObjWrapped<Self> for RytmExternal {
-    fn class_name() -> &'static str {
-        "rytm"
-    }
-
-    // You can modify the object here such as adding assists etc.
-    // TODO: Maybe add notification handling.
 }
 
 impl RytmExternal {
     /// Utility to register your wrapped class with Max
     pub(crate) unsafe fn register() {
-        median::wrapper::MaxObjWrapper::<Self>::register(false);
+        // Call order 2
+
+        MaxObjWrapper::<Self>::register(false);
     }
 
     const SELECTOR_QUERY: &'static str = "query";
     const SELECTOR_SEND: &'static str = "send";
     const SELECTOR_SET: &'static str = "set";
     const SELECTOR_GET: &'static str = "get";
-    const SELECTOR_DEBUG: &'static str = "debug";
     const SELECTOR_LOG_LEVEL: &'static str = "loglevel";
 
-    #[instrument(skip_all)]
-    #[log_errors]
-    fn debug_mode(_sel: &SymbolRef, atoms: &[Atom]) -> Result<(), RytmExternalError> {
-        if let Some(atom) = atoms.first() {
-            if let Some(AtomValue::Int(value)) = atom.get_value() {
-                // Check lib.rs for safety.
-                // In addition debug post should be never used in this function.
-                unsafe {
-                    if value == 1 {
-                        crate::RYTM_EXTERNAL_DEBUG = true;
-                        return Ok(());
-                    } else if value == 0 {
-                        crate::RYTM_EXTERNAL_DEBUG = false;
-                        return Ok(());
-                    }
-                    return Err(RytmExternalError::from(
-                        "Invalid value: Only 0 or 1 are allowed for setting the debug mode.",
-                    ));
-                }
-            }
-            return Err(RytmExternalError::from(
-                "Invalid value: Only 0 or 1 are allowed for setting the debug mode.",
-            ));
-        }
-        Err(RytmExternalError::from(
-            "Invalid format: 0 or 1 should follow the debug keyword.",
-        ))
-    }
-
-    #[instrument(skip(self))]
     pub fn int(&self, value: t_atom_long) -> Result<(), RytmExternalError> {
-        let _inlet_index = median::inlet::Proxy::get_inlet(self.max_obj());
-        let byte = u8::try_from(value).map_err(|_| {
-            RytmExternalError::from(
-                "Invalid input: rytm only understands sysex messages. Please connect sysexin object to the rytm inlet to make sure you pass in only sysex messages.",
-            )
-        }).inspect_err(
-            |err| {
-                error!("{}", err);
-            }
-        )?;
+        tracing::subscriber::with_default(Arc::clone(&self.subscriber), || {
+            self.root_span.in_scope(|| {
+                let _function_span = info_span!("int", "value" = value).entered();
 
-        // This one already logs errors in the object.
-        Ok(self.inner.handle_sysex_byte(byte)?)
+                let _inlet_index = median::inlet::Proxy::get_inlet(self.max_obj());
+                let byte = u8::try_from(value).map_err(|_| {
+                    RytmExternalError::from(
+                        "Invalid input: rytm only understands sysex messages. Please connect sysexin object to the rytm inlet to make sure you pass in only sysex messages.",
+                    )}).inspect_err(
+                        |err| {
+                            error!("{}", err);
+                        }
+                    )?;
+                // This one already logs errors in the object.
+                Ok(self.inner.handle_sysex_byte(byte)?)
+            })
+        })
     }
 
-    #[instrument(skip_all)]
     pub fn anything_with_selector(
         &self,
         sel: &SymbolRef,
         atoms: &[Atom],
     ) -> Result<(), RytmExternalError> {
-        let selector = sel
-            .to_string()
-            .map_err(|err| RytmExternalError::Custom(err.to_string()))?;
+        tracing::subscriber::with_default(Arc::clone(&self.subscriber), || {
+            self.root_span.in_scope(|| {
+                let _function_span = info_span!("anything_with_selector").entered();
+                let selector = sel
+                    .to_string()
+                    .map_err(|err|{
+                         self.send_status_error();
+                         RytmExternalError::Custom(err.to_string())
+                    })?;
 
-        match selector.as_str() {
-            Self::SELECTOR_QUERY => self.query(atoms),
-            Self::SELECTOR_SEND => self.send(atoms),
-            Self::SELECTOR_SET => self.set(atoms),
-            Self::SELECTOR_GET => self.get(atoms),
-            Self::SELECTOR_DEBUG => Self::debug_mode(sel, atoms),
-            Self::SELECTOR_LOG_LEVEL => self.change_log_level(atoms),
-            _ => Err(format!("Invalid selector: {selector}. Possible selectors are query, send, set, get, debug.").into()),
-        }
+                match selector.as_str() {
+                    Self::SELECTOR_QUERY => self.query(atoms),
+                    Self::SELECTOR_SEND => self.send(atoms),
+                    Self::SELECTOR_SET => self.set(atoms),
+                    Self::SELECTOR_GET => self.get(atoms),
+                    Self::SELECTOR_LOG_LEVEL => self.change_log_level(atoms),
+                    _ => Err(format!("Invalid selector: {selector}. Possible selectors are query, send, set, get, debug.").into()),
+                }.inspect_err(|_| {
+                    if selector.as_str() != Self::SELECTOR_LOG_LEVEL {
+                        self.send_status_error();
+                    }
+                })
+            })
+        })
     }
 
     #[instrument(skip_all)]
     #[log_errors]
     pub fn change_log_level(&self, atoms: &[Atom]) -> Result<(), RytmExternalError> {
-        let values = Self::get_rytm_values(atoms)?;
+        let values = self.get_rytm_values(atoms)?;
         if values.len() != 1 {
+            self.send_status_error();
             return Err(RytmExternalError::from(
                 "Invalid format: Only one symbol is allowed for changing the log level.",
             ));
         }
         let Some(RytmValue::Symbol(maybe_level)) = values.first() else {
+            self.send_status_error();
             return Err(RytmExternalError::from(
                 "Invalid format: Only one symbol is allowed for changing the log level.",
             ));
@@ -178,34 +158,21 @@ impl RytmExternal {
             "debug" => tracing::Level::DEBUG,
             "trace" => tracing::Level::TRACE,
             _ => {
+                self.send_status_error();
                 return Err(RytmExternalError::from(
                     "Invalid format: Only one symbol is allowed for changing the log level. It needs to be either error, warn, info, debug or trace.",
                 ));
             }
         };
 
-        let mut active_log_level = self.logging_state.active_level.lock();
+        let (changed, info) = apply_new_log_level_if_necessary(new_level, &self.logging_state);
 
-        if *active_log_level != new_level {
-            let mut new_filter = get_default_env_filter();
-            new_filter = new_filter.add_directive(new_level.into());
-
-            self.logging_state
-                .reload_handle
-                .reload(new_filter)
-                .inspect_err(|err| {
-                    warn!(
-                        "Failed to change log level from {} to {}: {:?}",
-                        active_log_level, new_level, err
-                    );
-                })
-                .ok();
-
-            *active_log_level = new_level;
-            info!(
-                "Default log level {} is successfully changed to: {}",
-                active_log_level, new_level
-            );
+        if changed {
+            self.send_status_success();
+            info.obj_post(self.max_obj());
+        } else {
+            self.send_status_warning();
+            info.obj_warn(self.max_obj());
         }
 
         Ok(())
@@ -213,15 +180,30 @@ impl RytmExternal {
 
     #[instrument(skip_all)]
     pub fn query(&self, atoms: &[Atom]) -> Result<(), RytmExternalError> {
-        let sysex = RytmObject::prepare_query(Self::get_rytm_values(atoms)?)?;
+        // Actually the attribute which sets this will is clipped to 0-127 but just in case:
+
+        let device_id =
+            u8::try_from(self.target_device_id.load(Ordering::SeqCst)).map_err(|_| {
+                RytmExternalError::from("Invalid device id: Device id should be between 0 and 127.")
+            })?;
+
+        if device_id > 127 {
+            return Err(RytmExternalError::from(
+                "Invalid device id: Device id should be between 0 and 127.",
+            ));
+        }
+
+        let sysex = RytmObject::prepare_query(self.get_rytm_values(atoms)?, Some(device_id))?;
+
         sysex.serial_send_int(&self.sysex_out);
         Ok(())
     }
 
     #[instrument(skip_all)]
     pub fn send(&self, atoms: &[Atom]) -> Result<(), RytmExternalError> {
-        let sysex = self.inner.prepare_sysex(Self::get_rytm_values(atoms)?)?;
+        let sysex = self.inner.prepare_sysex(self.get_rytm_values(atoms)?)?;
         sysex.serial_send_int(&self.sysex_out);
+
         Ok(())
     }
 
@@ -229,7 +211,7 @@ impl RytmExternal {
     pub fn set(&self, atoms: &[Atom]) -> Result<(), RytmExternalError> {
         self.response_to_outlet(
             self.inner
-                .command(CommandType::Set, Self::get_rytm_values(atoms)?)?,
+                .command(CommandType::Set, self.get_rytm_values(atoms)?)?,
         )
         .ok();
 
@@ -240,7 +222,7 @@ impl RytmExternal {
     pub fn get(&self, atoms: &[Atom]) -> Result<(), RytmExternalError> {
         self.response_to_outlet(
             self.inner
-                .command(CommandType::Get, Self::get_rytm_values(atoms)?)?,
+                .command(CommandType::Get, self.get_rytm_values(atoms)?)?,
         )
         .ok();
 
@@ -250,6 +232,7 @@ impl RytmExternal {
     #[instrument(skip_all)]
     #[log_errors]
     fn get_rytm_values(
+        &self,
         atoms: &[Atom],
     ) -> Result<rytm_object::value::RytmValueList, RytmExternalError> {
         atoms.try_into().map_err(|()| {
@@ -261,6 +244,7 @@ impl RytmExternal {
 
     #[instrument(skip(self))]
     fn response_to_outlet(&self, res: Response) -> Result<(), SendError> {
+        self.send_status_success();
         match res {
             Response::Common { index, key, value } => self
                 .query_out
@@ -309,8 +293,70 @@ impl RytmExternal {
             Response::Ok => Ok(()),
         }
         .inspect_err(|_| {
-            "Error sending to outlet due to stack overflow.".error();
-            warn!("Error sending to outlet due to stack overflow.");
+            "Error sending to results outlet due to stack overflow.".obj_warn(self.max_obj());
+            warn!("Error sending to results outlet due to stack overflow.");
         })
+    }
+
+    fn send_status(&self, code: isize) {
+        self.status_out
+            .send(code)
+            .inspect_err(|_| {
+                "Error sending to status outlet due to stack overflow.".obj_warn(self.max_obj());
+                warn!("Error sending to status outlet due to stack overflow.");
+            })
+            .ok();
+    }
+
+    fn send_status_success(&self) {
+        self.send_status(0);
+    }
+
+    fn send_status_error(&self) {
+        self.send_status(1);
+    }
+
+    fn send_status_warning(&self) {
+        self.send_status(2);
+    }
+}
+
+#[instrument(skip(logging_state))]
+pub fn apply_new_log_level_if_necessary(
+    new_level: tracing::Level,
+    logging_state: &LoggingState,
+) -> (bool, String) {
+    let mut active_log_level = logging_state.active_level.lock();
+    let mut is_changed: bool = true;
+    let mut information: String = format!(
+        "Previous logging level was already set to: {new_level}. Log level was not changed.",
+    );
+
+    if *active_log_level == new_level {
+        (false, information)
+    } else {
+        let previous_level = *active_log_level;
+        let new_filter = get_default_env_filter().add_directive(new_level.into());
+
+        logging_state
+            .reload_handle
+            .reload(new_filter)
+            .inspect_err(|err| {
+                is_changed = false;
+                information = format!(
+                    "Failed to change log level from {previous_level} to {new_level}: {err:?}"
+                );
+                warn!("{}", information);
+            })
+            .ok();
+
+        *active_log_level = new_level;
+
+        information =
+            format!("Default log level {previous_level} is successfully changed to: {new_level}");
+
+        info!("{}", information);
+
+        (is_changed, information)
     }
 }

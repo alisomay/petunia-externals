@@ -1,8 +1,6 @@
 [workspace]
 members = [
-    "rytm",
-    "rytm-object",
-    "error-logger-macro",
+    "externals/rytm/*"
 ]
 resolver = "2"
 

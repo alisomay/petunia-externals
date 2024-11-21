@@ -1,5 +1,5 @@
 [package]
-name = "rytm"
+name = "rytm-external"
 version = "0.1.0"
 authors = [ "Ali Somay <alisomay@runbox.com>" ]
 edition = "2021"

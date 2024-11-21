@@ -6,18 +6,17 @@ additional_profiles = [ "release" ]
 ## Environment setup, some will get overridden in other tasks
 
 [env]
-# Rytm hardcodings are a bit of an hack because I'm tired.
 CARGO_MAKE_CRATE_FS_NAME = "rytm"
-CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = ["rytm"]
-PACKAGE_TO_BUILD = "rytm"
-MAX_PACKAGE_NAME = { value = "median", condition = { env_not_set = ["MAX_PACKAGE_NAME"] } }
+CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = ["rytm-external"]
+PACKAGE_TO_BUILD = "rytm-external"
+MAX_PACKAGE_NAME = "petunia"
 MAX_EXT_NAME = { value = "${CARGO_MAKE_CRATE_FS_NAME}", condition = { env_not_set = ["MAX_EXT_NAME"] } }
 MAX_EXT_BASE_NAME = "${MAX_EXT_NAME}"
 PLATFORM_INSTALL_DIR = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "ERROR", mapping = { "macos" = "${HOME}/Documents/Max 8/Packages", windows = "${USERPROFILE}/Documents/Max 8/Packages" } }
-INIT_INSTALL_DIR = "${PLATFORM_INSTALL_DIR}/${MAX_PACKAGE_NAME}/init/"
 EXTERNAL_INSTALL_DIR = "${PLATFORM_INSTALL_DIR}/${MAX_PACKAGE_NAME}/externals/"
 PACKAGED_LIB_FILE_NAME = "${MAX_EXT_NAME}"
-INIT_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/init"
+PACKAGE_MEMBERS_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}/package"
+PACKAGE_MEMBERS_INSTALL_DIR = "${PLATFORM_INSTALL_DIR}/${MAX_PACKAGE_NAME}/"
 TARGET_TRIPLE = "${CARGO_MAKE_RUST_TARGET_TRIPLE}"
 TARGET_TRIPLE_WINDOWS = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "x86_64-pc-windows-gnu", mapping = { "windows" = "x86_64-pc-windows-msvc" } }
 TARGET_TRIPLE_MAC_AARCH64 = "aarch64-apple-darwin"
@@ -181,7 +180,7 @@ run_task = [
 private = true
 env = { "PACKAGE_DIR" = "${WORKSPACE_TARGET_DIR}/${PROFILE_DIR}/${MAX_PACKAGE_NAME}" }
 run_task = [
-    { name = ["copy-all-packages", "copy-all-init"], condition = { platforms = ["mac"] } },
+    { name = ["extend-package-members", "copy-all-packages", "copy-all-package-members"], condition = { platforms = ["mac"] } },
 ]
 
 [tasks.copy-all-packages]
@@ -194,13 +193,14 @@ cp -r ${WORKSPACE_TARGET_DIR}/${TARGET_TRIPLE_WINDOWS}/${PROFILE_DIR}/${MAX_EXT_
 echo PACKAGE_DIR=${PACKAGE_DIR}
 '''
 
-[tasks.copy-all-init]
+[tasks.copy-all-package-members]
 private = true
-condition = { files_exist = ["${INIT_DIR}/"] }
+condition = { files_exist = ["${PACKAGE_MEMBERS_DIR}/"] }
 script_runner = "@shell"
 script = '''
-mkdir -p ${PACKAGE_DIR}/init/
-cp ${INIT_DIR}/* "${PACKAGE_DIR}/init/"
+mkdir -p ${PACKAGE_DIR}/
+rm -rf ${PACKAGE_DIR}/*
+cp -r ${PACKAGE_MEMBERS_DIR}/* "${PACKAGE_DIR}/"
 '''
 
 [tasks.install.windows]
@@ -218,7 +218,7 @@ Copy-Item $env:PROFILE_EXTERNAL_PATH -Destination $env:EXTERNAL_INSTALL_DIR
 
 [tasks.install.mac]
 clear = true
-dependencies = ["package", "install-init"]
+dependencies = ["package", "extend-package-members", "install-package-members"]
 script_runner = "@shell"
 script = '''
 mkdir -p "${EXTERNAL_INSTALL_DIR}"
@@ -227,17 +227,28 @@ cp -r "${PROFILE_EXTERNAL_PATH}" "${EXTERNAL_INSTALL_DIR}"
 
 [tasks.install-universal.mac]
 clear = true
-dependencies = ["build-mac-universal", "install-init"]
+dependencies = ["build-mac-universal", "extend-package-members", "install-package-members",]
 script_runner = "@shell"
 script = '''
 mkdir -p "${EXTERNAL_INSTALL_DIR}"
 cp -r "${PROFILE_EXTERNAL_PATH}" "${EXTERNAL_INSTALL_DIR}"
 '''
 
-[tasks.install-init.mac]
-condition = { files_exist = ["${INIT_DIR}/"] }
+[tasks.install-package-members.mac]
+condition = { files_exist = ["${PACKAGE_MEMBERS_DIR}/"] }
 script_runner = "@shell"
 script = '''
-mkdir -p "${INIT_INSTALL_DIR}"
-cp ${INIT_DIR}/* "${INIT_INSTALL_DIR}"
+mkdir -p "${PACKAGE_MEMBERS_INSTALL_DIR}"
+rm -rf "${PACKAGE_MEMBERS_INSTALL_DIR}"/*
+cp -r ${PACKAGE_MEMBERS_DIR}/* "${PACKAGE_MEMBERS_INSTALL_DIR}"
 '''
+
+[tasks.extend-package-members]
+script_runner = "@shell"
+script = '''
+cp "${CARGO_MAKE_WORKING_DIRECTORY}/README.md" "${PACKAGE_MEMBERS_DIR}/readme.md"
+cp "${CARGO_MAKE_WORKING_DIRECTORY}/LICENSE" "${PACKAGE_MEMBERS_DIR}/license.md"
+cp "${CARGO_MAKE_WORKING_DIRECTORY}/API_DOCS.md" "${PACKAGE_MEMBERS_DIR}/api-docs.md"
+'''
+
+

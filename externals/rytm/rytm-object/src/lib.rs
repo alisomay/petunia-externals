@@ -76,30 +76,47 @@ impl RytmObject {
 
     #[instrument]
     #[log_errors]
-    pub fn prepare_query(query: RytmValueList) -> Result<Vec<u8>, RytmObjectError> {
+    pub fn prepare_query(
+        query: RytmValueList,
+        device_id: Option<u8>,
+    ) -> Result<Vec<u8>, RytmObjectError> {
         let pair = match (query.first(), query.get(1)) {
             (None, Some(_) | None) => Err(QueryError::InvalidFormat),
             (Some(object_type), other) => Ok((object_type, other)),
         }?;
 
+        let device_id = device_id.unwrap_or(0x00);
+
         Ok(match ObjectTypeSelector::try_from(pair)? {
-            ObjectTypeSelector::Pattern(index) => PatternQuery::new(index).unwrap().as_sysex(),
-            ObjectTypeSelector::PatternWorkBuffer => {
-                PatternQuery::new_targeting_work_buffer().as_sysex()
-            }
-            ObjectTypeSelector::Kit(index) => KitQuery::new(index).unwrap().as_sysex(),
-            ObjectTypeSelector::KitWorkBuffer => KitQuery::new_targeting_work_buffer().as_sysex(),
-            ObjectTypeSelector::Sound(index) => SoundQuery::new(index).unwrap().as_sysex(),
-            ObjectTypeSelector::SoundWorkBuffer(index) => {
-                SoundQuery::new_targeting_work_buffer(index)
+            ObjectTypeSelector::Pattern(index) => {
+                PatternQuery::new_with_device_id(index, device_id)
                     .unwrap()
                     .as_sysex()
             }
-            ObjectTypeSelector::Global(index) => GlobalQuery::new(index).unwrap().as_sysex(),
-            ObjectTypeSelector::GlobalWorkBuffer => {
-                GlobalQuery::new_targeting_work_buffer().as_sysex()
+            ObjectTypeSelector::PatternWorkBuffer => {
+                PatternQuery::new_targeting_work_buffer_with_device_id(device_id).as_sysex()
             }
-            ObjectTypeSelector::Settings => SettingsQuery::new().as_sysex(),
+            ObjectTypeSelector::Kit(index) => KitQuery::new_with_device_id(index, device_id)
+                .unwrap()
+                .as_sysex(),
+            ObjectTypeSelector::KitWorkBuffer => {
+                KitQuery::new_targeting_work_buffer_with_device_id(device_id).as_sysex()
+            }
+            ObjectTypeSelector::Sound(index) => SoundQuery::new_with_device_id(index, device_id)
+                .unwrap()
+                .as_sysex(),
+            ObjectTypeSelector::SoundWorkBuffer(index) => {
+                SoundQuery::new_targeting_work_buffer_with_device_id(index, device_id)
+                    .unwrap()
+                    .as_sysex()
+            }
+            ObjectTypeSelector::Global(index) => GlobalQuery::new_with_device_id(index, device_id)
+                .unwrap()
+                .as_sysex(),
+            ObjectTypeSelector::GlobalWorkBuffer => {
+                GlobalQuery::new_targeting_work_buffer_with_device_id(device_id).as_sysex()
+            }
+            ObjectTypeSelector::Settings => SettingsQuery::new_with_device_id(device_id).as_sysex(),
         }?)
     }
 

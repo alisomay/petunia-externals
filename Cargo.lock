@@ -515,7 +515,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rytm"
+name = "rytm-external"
 version = "0.1.0"
 dependencies = [
  "error-logger-macro",

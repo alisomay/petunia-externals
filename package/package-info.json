@@ -1,0 +1,29 @@
+{
+  "name": "petunia",
+  "displayname": "petunia",
+  "version": "0.2.0",
+  "author": "Ali Somay",
+  "authors": [],
+  "description": "An eclectic collection of externals from me which are proved to be useful and interesting in my musical journey.<br/><br/>This package adheres to semantic versioning. Details on https://semver.org.<br/><br/><b>List of externals:</b><br/><ul><li><b>rytm</b>: Enables communication with Elektron Analog Rytm MKII which is <b>running OS 1.70</b> over sysex api.<br/>The source code could be found in https://github.com/alisomay/rytm-external.</li></ul>",
+  "tags": ["petunia", "communication", "midi", "elektron", "rytm"],
+  "website": "https://petunia.audio",
+  "extends": "",
+  "extensible": 0,
+  "max_version_min": "8.0",
+  "max_version_max": "none",
+  "os": {
+    "macintosh": {
+      "min_version": "none",
+      "platform": ["x64", "aarch64"]
+    },
+    "windows": {
+      "min_version": "none",
+      "platform": ["x64"]
+    }
+  },
+  "homepatcher": "petunia-overview.maxpat",
+  "package_extra": {
+    "reverse_domain": "audio.petunia",
+    "copyright": "Copyright (c) 2023 - Ali Somay (alisomay@runbox.com). All rights reserved."
+  }
+}
