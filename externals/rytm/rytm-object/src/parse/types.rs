@@ -1,9 +1,12 @@
+use crate::{
+    api::{
+        object_type::*,
+        plock_type::{PLOCK_CLEAR, PLOCK_GET, PLOCK_SET},
+    },
+    error::ParseError,
+    value::RytmValue,
+};
 use std::str::FromStr;
-
-use crate::api::object_type::*;
-use crate::api::plock_type::{PLOCK_CLEAR, PLOCK_GET, PLOCK_SET};
-use crate::error::ParseError;
-use crate::value::RytmValue;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlockOperation {

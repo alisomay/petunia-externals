@@ -1,21 +1,14 @@
-use crate::api::kit_action_type;
-use crate::api::kit_enum_type;
-use crate::api::sound_action_type;
-use crate::api::sound_enum_type;
-use crate::error::EnumError::InvalidEnumType;
-use crate::error::GetError;
-use crate::error::IdentifierError;
-use crate::error::RytmObjectError;
-use crate::error::SetError;
-use crate::parse::types::{ParsedValue, PlockOperation};
-use crate::types::CommandType;
-use crate::value::RytmValue;
+use super::Response;
+use crate::{
+    api::{kit_action_type, kit_enum_type, sound_action_type, sound_enum_type},
+    error::{EnumError::InvalidEnumType, GetError, IdentifierError, RytmObjectError, SetError},
+    parse::types::{ParsedValue, PlockOperation},
+    types::CommandType,
+    value::RytmValue,
+};
 use error_logger_macro::log_errors;
 use rytm_rs::object::pattern::Trig;
-use tracing::error;
-use tracing::instrument;
-
-use super::Response;
+use tracing::{error, instrument};
 
 #[instrument(skip(object))]
 #[log_errors]

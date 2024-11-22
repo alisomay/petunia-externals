@@ -19,28 +19,31 @@
 
 pub mod class;
 pub mod error;
+pub mod file;
+pub mod load_save;
 pub mod tracing_setup;
 pub mod traits;
 pub mod trampoline;
+pub mod types;
+pub mod utils;
 
-use std::sync::atomic::{AtomicIsize, Ordering};
-use std::sync::Arc;
-
-use crate::error::RytmExternalError;
-use crate::traits::Post;
+use crate::{error::RytmExternalError, traits::Post};
 use error_logger_macro::log_errors;
-use median::outlet::{OutAnything, SendError};
-use median::wrapper::MaxObjWrapper;
-use median::{atom::Atom, max_sys::t_atom_long, object::MaxObj, outlet::OutInt, symbol::SymbolRef};
-use rytm_object::api::Response;
-use rytm_object::types::CommandType;
-use rytm_object::value::RytmValue;
-use rytm_object::RytmObject;
-use tracing::span::EnteredSpan;
-use tracing::{error, info_span};
-use tracing::{info, instrument, warn};
+use median::{
+    atom::Atom,
+    max_sys::t_atom_long,
+    object::MaxObj,
+    outlet::{OutAnything, OutInt, SendError},
+    symbol::SymbolRef,
+    wrapper::MaxObjWrapper,
+};
+use rytm_object::{api::Response, types::CommandType, value::RytmValue, RytmObject};
+use std::sync::{
+    atomic::{AtomicIsize, Ordering},
+    Arc,
+};
+use tracing::{error, info, info_span, instrument, span::EnteredSpan, warn};
 use tracing_setup::{get_default_env_filter, LoggingState};
-use tracing_subscriber::{reload, EnvFilter};
 use traits::SerialSend;
 
 // This is the entry point for the Max external
@@ -53,8 +56,6 @@ pub unsafe extern "C" fn ext_main(_r: *mut ::std::ffi::c_void) {
         std::process::exit(1);
     }
 }
-
-pub type ReloadHandle = reload::Handle<EnvFilter, tracing_subscriber::Registry>;
 
 // This is the actual object (external)
 pub struct RytmExternal {
@@ -73,7 +74,6 @@ impl RytmExternal {
     /// Utility to register your wrapped class with Max
     pub(crate) unsafe fn register() {
         // Call order 2
-
         MaxObjWrapper::<Self>::register(false);
     }
 
@@ -83,9 +83,12 @@ impl RytmExternal {
     const SELECTOR_GET: &'static str = "get";
     const SELECTOR_LOG_LEVEL: &'static str = "loglevel";
 
-    // TODO: Add loading and saving of projects later on.
-    const _SELECTOR_LOAD: &'static str = "load";
-    const _SELECTOR_SAVE: &'static str = "save";
+    // TODO: Implementations for these are sketches.
+    // For proper impl move some of the logic to the RytmObject.
+    // Make nice interfaces with proper error handling management here.
+
+    const SELECTOR_LOAD: &'static str = "load";
+    const SELECTOR_SAVE: &'static str = "save";
 
     pub fn int(&self, value: t_atom_long) -> Result<(), RytmExternalError> {
         tracing::subscriber::with_default(Arc::clone(&self.subscriber), || {
@@ -122,18 +125,23 @@ impl RytmExternal {
                          RytmExternalError::Custom(err.to_string())
                     })?;
 
-                let possible_selectors = [Self::SELECTOR_QUERY,
-                        Self::SELECTOR_SEND,
-                        Self::SELECTOR_SET,
-                        Self::SELECTOR_GET,
-                        Self::SELECTOR_LOG_LEVEL].join(", ");
-                
+                let possible_selectors = [
+                    Self::SELECTOR_QUERY,
+                    Self::SELECTOR_SEND,
+                    Self::SELECTOR_SET,
+                    Self::SELECTOR_GET,
+                    Self::SELECTOR_LOG_LEVEL,
+                    Self::SELECTOR_LOAD,
+                    Self::SELECTOR_SAVE,
+                ].join(", ");
                 match selector.as_str() {
                     Self::SELECTOR_QUERY => self.query(atoms),
                     Self::SELECTOR_SEND => self.send(atoms),
                     Self::SELECTOR_SET => self.set(atoms),
                     Self::SELECTOR_GET => self.get(atoms),
                     Self::SELECTOR_LOG_LEVEL => self.change_log_level(atoms),
+                    Self::SELECTOR_LOAD => self.load(atoms),
+                    Self::SELECTOR_SAVE => self.save(atoms),
                     _ => Err(format!("Parse Error: Invalid command type {selector}. Possible commands are {possible_selectors}.").into()),
                 }.inspect_err(|_| {
                     if selector.as_str() != Self::SELECTOR_LOG_LEVEL {
@@ -194,7 +202,9 @@ impl RytmExternal {
 
         let device_id =
             u8::try_from(self.target_device_id.load(Ordering::SeqCst)).map_err(|_| {
-                RytmExternalError::from("Query Error: Invalid device id. Device id should be between 0 and 127.")
+                RytmExternalError::from(
+                    "Query Error: Invalid device id. Device id should be between 0 and 127.",
+                )
             })?;
 
         if device_id > 127 {

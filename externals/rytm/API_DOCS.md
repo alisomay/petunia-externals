@@ -4,7 +4,7 @@
 
 Words in these wrapped with `<..>` should be read as placeholders for the actual values.
 
-For example `<selector>` should be read as `query`, `send`, `get` or `set`.
+For example `<selector>` should be read as `query`, `send`, `get`, `set`, `load`, `save`, `loglevel`.
 
 Words in these wrapped with `[]` should be read as optional values.
 
@@ -29,6 +29,9 @@ Also do not forget to check the max help files and max reference for the `rytm` 
   - `send` Sends data to the device.
   - `get` Gets data from the `rytm` external.
   - `set` Sets data to the `rytm` external.
+  - `load` Loads either full or partial project data using `.rytm` or `.sysex` files.
+  - `save` Saves either full or partial project data using `.rytm` or `.sysex` files.
+  - `loglevel` `rytm` also logs to stdout with different levels of verbosity using [`tracing`](https://docs.rs/tracing/latest/tracing/) this selector is used to set the log level in runtime.
 - `<object-type>` A symbol which defines the type of the object.
   - `pattern` A pattern.
   - `kit` A kit.
@@ -78,6 +81,41 @@ Examples:
 - `send settings`
 - `send sound_wb 0`
 - `send global_wb`
+
+## Loading and saving
+
+The objects you can save or load are `pattern`, `kit`, `sound`, `global` and `settings`.
+
+The work buffer versions of these objects are not available to save or load.
+
+- `~` in relative paths are accepted. `.` is pointing to `/Users/<my-user>/Desktop` in my mac computer but I didn't test it on other systems. You may find information by enabling debug logs and running max from the command line to discover the current working directory.
+- `.rytm` files are internally large `JSON` (~62mb) files and in my opinion they are not very useful but the feature is there to use.
+- `.sysex` files by nature store the index of the saved object also. E.g. saving kit 1 and loading it would load the saved kit to the same index (1). Current version does not support loading to a different index but if it becomes a necessity it can be added.
+
+## Load format
+
+The load format is used to load a full or partial project from the file system to the object.
+
+`load [<file-path>]`
+
+Examples:
+
+- `load`
+- `load ~/Desktop/project.rytm`
+- `load ~/Desktop/kit_1.sysex`
+
+## Save format
+
+The save format is used to save a full or partial project to the file system from the object.
+
+`save [<save-target>] [<index>] [<file-path>]`
+
+Examples:
+
+- `save`
+- `save pattern 1 ~/Desktop/pattern_1.sysex`
+- `save ~/Desktop/project.rytm`
+- `save settings ~/Desktop/settings.sysex`
 
 ## Get format
 
@@ -331,7 +369,7 @@ Accepted formats:
 - `accent` -> **int**, _0..=1_
 - `swing` -> **int**, _0..=1_
 - `slide` -> **int**, _0..=1_
-- `note` -> **int**, _0..=127_
+- `note` -> **int**, _36..=84_
 - `vel` -> **int**, _1..=127_
 - `retrigveloffset` -> **int**, _-128..=127_
 - `soundlock` -> **int**, _0..=127_

@@ -8,6 +8,7 @@ edition = "2021"
 # Max 8.x SDK
 median = { git = "https://github.com/Cycling74/median", rev = "168bd8e01971cb263c94c12cabc49d75c461f761" }
 rytm-rs = { git = "https://github.com/alisomay/rytm-rs.git", branch = "main" }
+# rytm-rs = { path = "../../../../rytm-rs/rytm" }
 
 error-logger-macro = { path = "../error-logger-macro" }
 

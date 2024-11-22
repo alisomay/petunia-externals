@@ -1,3 +1,7 @@
+env_files = [
+    { path = "./.env", profile = "release" },
+]
+
 # vim: set ts=4 sw=4 expandtab:
 [config]
 default_to_workspace = false
@@ -26,7 +30,8 @@ IS_MAC_AARCH64 = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = 
 IS_MAC_X86 = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "false", mapping = { "x86_64-apple-darwin" = "true" } }
 IS_WIN_X86 = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "false", mapping = { "windows" = "true" } }
 IS_TILDE = false
-WORKSPACE_TARGET_DIR = "target"
+WORKSPACE_TARGET_DIR = "target" 
+
 
 [env.development]
 BUILD_ARGS = "build"
@@ -159,14 +164,32 @@ script = '''
 mkdir -p ${PROFILE_EXTERNAL_PATH}/Contents/MacOS/
 cp "${PROFILE_TARGET_DIR}/${LIB_FILE_NAME}" "${PROFILE_EXTERNAL_PATH}/Contents/MacOS/${PACKAGED_LIB_FILE_NAME}"
 cp "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}/PkgInfo" "${PROFILE_EXTERNAL_PATH}/Contents/"
+'''
+
+[tasks.codesign-ad-hoc]
+condition = { profiles = [ "development" ] }
+private = true
+clear = true
+script_runner = "@shell"
+script = '''
 codesign -f -s - "${PROFILE_EXTERNAL_PATH}"
+'''
+
+[tasks.codesign-with-dev-id]
+condition = { profiles = [ "release" ] }
+private = true
+clear = true
+script_runner = "@shell"
+script = '''
+codesign -f -v -s "${DEVELOPER_ID}" --entitlements "${ENTITLEMENTS}" --timestamp --options=runtime "${PROFILE_EXTERNAL_PATH}" && echo "Signed ${PROFILE_EXTERNAL_PATH}"
 '''
 
 [tasks.package]
 dependencies = ["build", "name-env"]
 clear = true
 run_task = [
-    { name = "package-mac", condition = { platforms = ["mac"] } },
+    { name = ["package-mac", "codesign-ad-hoc"], condition = { platforms = ["mac"], profiles = ["development"] } },
+    { name = ["package-mac", "codesign-with-dev-id"], condition = { platforms = ["mac"], profiles = ["release"] } },
     { name = "package-windows", condition = { platforms = ["windows"] } },
 ]
 

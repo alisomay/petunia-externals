@@ -1,14 +1,12 @@
-use core::ffi::c_void;
-use median::max_sys::{t_atom, t_atom_long, t_symbol};
-use median::object::MaxObj;
-use median::wrapper::MaxObjWrapper;
-use std::os::raw::c_long;
-use std::sync::atomic::Ordering;
-
-use median::method;
-use median::wrapper::WrapperWrapped;
-
 use super::RytmExternal;
+use core::ffi::c_void;
+use median::{
+    max_sys::{t_atom, t_atom_long, t_symbol},
+    method,
+    object::MaxObj,
+    wrapper::{MaxObjWrapper, WrapperWrapped},
+};
+use std::{os::raw::c_long, sync::atomic::Ordering};
 
 impl RytmExternal {
     // Methods:

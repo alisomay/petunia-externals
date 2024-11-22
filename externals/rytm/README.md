@@ -180,8 +180,6 @@ I'll do it some time later.
 
 Since the hard work is done it is easy to wrap this as a pd external also. I'll do that some time.
 
-Saving and loading projects packed as a `sysex` file is not yet implemented. This needs some work on the `rytm-rs` side.
-
 ## Contributing
 
 I am aware that this is a very niche project, did by a single person and the code base is not very well documented.

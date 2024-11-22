@@ -1,20 +1,22 @@
+use super::{plock::handle_plock_commands, Response};
+use crate::{
+    error::{
+        number_or_set_error, EnumError::InvalidEnumType, GetError, IdentifierError, RytmObjectError,
+    },
+    parse::types::ParsedValue,
+    types::CommandType,
+    value::RytmValue,
+    RytmObject,
+};
 use error_logger_macro::log_errors;
-use rytm_rs::object::pattern::track::trig::HoldsTrigFlags;
-use rytm_rs::object::pattern::track::Track;
-use rytm_rs::object::pattern::Trig;
-use rytm_rs::object::Pattern;
-use tracing::instrument;
-
-use crate::error::EnumError::InvalidEnumType;
-use crate::error::{number_or_set_error, GetError, IdentifierError, RytmObjectError};
-use crate::parse::types::ParsedValue;
-use crate::types::CommandType;
-use crate::value::RytmValue;
-use crate::RytmObject;
-use tracing::error;
-
-use super::plock::handle_plock_commands;
-use super::Response;
+use rytm_rs::object::{
+    pattern::{
+        track::{trig::HoldsTrigFlags, Track},
+        Trig,
+    },
+    Pattern,
+};
+use tracing::{error, instrument};
 
 #[instrument(skip(rytm))]
 pub fn handle(

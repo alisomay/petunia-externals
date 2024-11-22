@@ -1,22 +1,16 @@
+use super::{sound, sound::SoundSource, Response};
+use crate::{
+    api::{kit_action_type::*, kit_element_type::*, kit_enum_type::*},
+    error::{EnumError::InvalidEnumType, GetError, IdentifierError, RytmObjectError, SetError},
+    parse::types::{Number, ParsedValue},
+    types::CommandType,
+    value::RytmValue,
+    RytmObject,
+};
 use error_logger_macro::log_errors;
 use rytm_rs::object::Kit;
-use tracing::instrument;
-
-use crate::api::kit_action_type::*;
-use crate::api::kit_element_type::*;
-use crate::api::kit_enum_type::*;
-use crate::error::EnumError::InvalidEnumType;
-use crate::error::{GetError, IdentifierError, RytmObjectError, SetError};
-use crate::parse::types::{Number, ParsedValue};
-use crate::types::CommandType;
-use crate::value::RytmValue;
-use crate::RytmObject;
 use std::convert::TryInto;
-use tracing::error;
-
-use super::sound;
-use super::sound::SoundSource;
-use super::Response;
+use tracing::{error, instrument};
 
 #[instrument(skip(rytm))]
 pub fn handle(

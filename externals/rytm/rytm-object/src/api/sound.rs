@@ -1,16 +1,14 @@
+use super::Response;
+use crate::{
+    error::{EnumError::InvalidEnumType, GetError, IdentifierError, RytmObjectError, SetError},
+    parse::types::{Number, ParsedValue},
+    types::CommandType,
+    value::RytmValue,
+    RytmObject,
+};
 use error_logger_macro::log_errors;
 use rytm_rs::object::{Kit, Sound};
-use tracing::instrument;
-
-use crate::error::EnumError::InvalidEnumType;
-use crate::error::{GetError, IdentifierError, RytmObjectError, SetError};
-use crate::parse::types::{Number, ParsedValue};
-use crate::types::CommandType;
-use crate::value::RytmValue;
-use crate::RytmObject;
-use tracing::error;
-
-use super::Response;
+use tracing::{error, instrument};
 
 #[derive(Debug)]
 pub enum SoundSource<'a> {

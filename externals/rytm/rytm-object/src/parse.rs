@@ -1,17 +1,17 @@
 pub mod types;
 
-use crate::api;
-use crate::api::object_type::*;
-use crate::error::ParseError;
-use crate::parse::types::ParseResult;
-use crate::types::CommandType;
-use crate::value::{RytmValue, RytmValueList};
+use crate::{
+    api,
+    api::object_type::*,
+    error::ParseError,
+    parse::types::ParseResult,
+    types::CommandType,
+    value::{RytmValue, RytmValueList},
+};
 use error_logger_macro::log_errors;
 use lazy_static::lazy_static;
-use std::collections::HashSet;
-use std::str::FromStr;
-use tracing::error;
-use tracing::instrument;
+use std::{collections::HashSet, str::FromStr};
+use tracing::{error, instrument};
 use types::{Number, ObjectTypeSelector, ParsedValue, PlockOperation};
 
 /// Parses a 'get' or 'set' command, given the values (excluding the selector)

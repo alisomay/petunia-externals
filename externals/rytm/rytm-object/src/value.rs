@@ -101,7 +101,7 @@ impl TryFrom<&[AtomValue]> for RytmValueList {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum RytmValue {
     Float(f64),
     Int(isize),

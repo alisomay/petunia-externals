@@ -1,11 +1,10 @@
-use std::sync::Arc;
-
 use parking_lot::Mutex;
+use std::sync::Arc;
 use tracing::Level;
 use tracing_core::LevelFilter;
 use tracing_subscriber::{layer::SubscriberExt, reload, EnvFilter, Layer};
 
-use crate::ReloadHandle;
+pub type ReloadHandle = reload::Handle<EnvFilter, tracing_subscriber::Registry>;
 
 pub struct LoggingState {
     pub reload_handle: ReloadHandle,

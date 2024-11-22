@@ -1,15 +1,17 @@
+use super::Response;
+use crate::{
+    error::{
+        number_or_set_error, EnumError::InvalidEnumType, GetError, IdentifierError,
+        RytmObjectError, SetError,
+    },
+    parse::types::{Number, ParsedValue},
+    types::CommandType,
+    value::RytmValue,
+    RytmObject,
+};
 use error_logger_macro::log_errors;
 use rytm_rs::object::Settings;
-use tracing::instrument;
-
-use super::Response;
-use crate::error::EnumError::InvalidEnumType;
-use crate::error::{number_or_set_error, GetError, IdentifierError, RytmObjectError, SetError};
-use crate::parse::types::{Number, ParsedValue};
-use crate::types::CommandType;
-use crate::value::RytmValue;
-use crate::RytmObject;
-use tracing::error;
+use tracing::{error, instrument};
 
 #[instrument(skip(rytm))]
 pub fn handle(

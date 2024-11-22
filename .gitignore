@@ -2,3 +2,4 @@
 .idea
 .old
 petunia/externals/*
+.env

@@ -1,7 +1,6 @@
+use crate::parse::types::{Number, ParsedValue};
 use median::max_sys;
 use rytm_rs::error::RytmError;
-
-use crate::parse::types::{Number, ParsedValue};
 
 #[derive(thiserror::Error, Debug)]
 #[non_exhaustive]

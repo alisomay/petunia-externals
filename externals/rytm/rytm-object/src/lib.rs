@@ -3,7 +3,6 @@ use api::{
     kit, pattern, settings, sound, Response,
 };
 use error::{QueryError, RytmObjectError, SendError};
-
 use error_logger_macro::log_errors;
 use parking_lot::Mutex;
 use parse::{
@@ -18,9 +17,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-
-use tracing::error;
-use tracing::instrument;
+use tracing::{error, instrument};
 use types::CommandType;
 use value::RytmValueList;
 

@@ -14,6 +14,10 @@ pub enum RytmExternalError {
 
     #[error("Not implemented, if you need this api open an issue in https://github.com/alisomay/rytm-external.")]
     NotYetImplemented,
+
+    // TODO: Just an hack I'm tired
+    #[error("Will not be printed.")]
+    EarlyExitWithOk,
 }
 
 impl From<&str> for RytmExternalError {
@@ -34,6 +38,7 @@ impl RytmExternalError {
             Self::Custom(err) => median::object::error(obj, err.to_string()),
             Self::StringConversionError(err) => median::object::error(obj, err.to_string()),
             Self::RytmObject(err) => err.obj_post(obj),
+            Self::EarlyExitWithOk => {}
             Self::NotYetImplemented => {
                 median::object::error(obj, "Not yet implemented.".to_string());
             }
@@ -45,6 +50,7 @@ impl RytmExternalError {
             Self::Custom(err) => median::error(err.to_string()),
             Self::StringConversionError(err) => median::error(err.to_string()),
             Self::RytmObject(err) => err.post(),
+            Self::EarlyExitWithOk => {}
             Self::NotYetImplemented => median::error("Not yet implemented.".to_string()),
         }
     }

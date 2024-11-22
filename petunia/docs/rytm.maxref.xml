@@ -174,9 +174,6 @@
 		<br />
 		There are no technical obstacle there but it takes good amount of time due to the large amount of machines.
 		I'll do it some time later.
-		<br />
-		<br />
-		Saving and loading projects packed as a <m><b>sysex</b></m> file is not yet implemented. This needs some work on the <a href="https://github.com/alisomay/rytm-rs">rytm-rs</a> side.
 	</description>
 
 	<!--ARGUMENTS-->
@@ -295,6 +292,61 @@
 			</description>
 		</method>
 
+		<method name="load">
+			<arglist>
+				<arg name="file-path" optional="1" type="symbol" />
+			</arglist>
+			<digest>
+                Load a full or partial project from the file system to the object.
+            </digest>
+			<description>
+                The load format is used to load a full or partial project from the file system to the object.
+                <br/>
+                <br/>
+                Format: <m><b>load [&lt;file-path&gt;]</b></m>
+                <br/>
+                <br/>
+				Please also read the "3. Loading and saving" section in the <a href="#rytm-api-ref">Rytm API Reference</a> for more information.
+				<br/>
+				<br/>
+				Examples:
+                <ul>
+                    <li><m><b>load</b></m></li>
+                    <li><m><b>load ~/Desktop/project.rytm</b></m></li>
+                    <li><m><b>load ~/Desktop/kit_1.sysex</b></m></li>
+                </ul>
+            </description>
+		</method>
+
+		<method name="save">
+			<arglist>
+				<arg name="save-target" optional="1" type="symbol" />
+				<arg name="index" optional="1" type="int" />
+				<arg name="file-path" optional="1" type="symbol" />
+			</arglist>
+			<digest>
+	            Save a full or partial project to the file system from the object.
+        	</digest>
+			<description>
+	            The save format is used to save a full or partial project to the file system from the object.
+	            <br/>
+	            <br/>
+	            Format: <m><b>save [&lt;save-target&gt;] [&lt;index&gt;] [&lt;file-path&gt;]</b></m>
+	            <br/>
+	            <br/>
+				Please also read the "3. Loading and saving" section in the <a href="#rytm-api-ref">Rytm API Reference</a> for more information.
+				<br/>
+				<br/>
+	            Examples:
+	            <ul>
+	                <li><m><b>save</b></m></li>
+	                <li><m><b>save pattern 1 ~/Desktop/pattern_1.sysex</b></m></li>
+	                <li><m><b>save ~/Desktop/project.rytm</b></m></li>
+	                <li><m><b>save settings ~/Desktop/settings.sysex</b></m></li>
+	            </ul>
+        	</description>
+		</method>
+
 		<method name="loglevel">
 			<arglist>
 				<arg name="level" optional="0" type="symbol" />
@@ -321,6 +373,7 @@
 			</description>
 		</method>
 	</methodlist>
+
 
 	<misc name="Rytm API Reference" id="rytm-api-ref">
 		<entry name="1. Introduction">
@@ -360,14 +413,17 @@
 				<br /> 
 				<br /> 
 				<ul>
-				    <li><m><b>&lt;selector&gt;</b></m> A symbol which defines an operation. Available selectors are:
-				        <ul>
-				            <li><m><b>query</b></m> Queries the device for data.</li>
-				            <li><m><b>send</b></m> Sends data to the device.</li>
-				            <li><m><b>get</b></m> Gets data from the <m><b>rytm</b></m> external.</li>
-				            <li><m><b>set</b></m> Sets data to the <m><b>rytm</b></m> external.</li>
-				        </ul>
-				    </li>
+					<li><m><b>&lt;selector&gt;</b></m> A symbol which defines an operation. Available selectors are: 
+						<ul>
+							<li><m><b>query</b></m> Queries the device for data.</li>
+							<li><m><b>send</b></m> Sends data to the device.</li>
+							<li><m><b>get</b></m> Gets data from the <o>rytm</o> external.</li>
+							<li><m><b>set</b></m> Sets data to the <o>rytm</o> external.</li>
+							<li><m><b>load</b></m> Loads either full or partial project data using <m><b>.rytm</b></m> or <m><b>.sysex</b></m> files.</li>
+							<li><m><b>save</b></m> Saves either full or partial project data using <m><b>.rytm</b></m> or <m><b>.sysex</b></m> files.</li>
+							<li><m><b>loglevel</b></m> <o>rytm</o> also logs to stdout with different levels of verbosity using <a href="https://docs.rs/tracing/latest/tracing/">tracing</a>, this selector is used to set the log level in runtime.</li>
+						</ul>
+					</li>
 				    <li><m><b>&lt;object-type&gt;</b></m> A symbol which defines the type of the object.
 				        <ul>
 				            <li><m><b>pattern</b></m> A pattern.</li>
@@ -389,7 +445,23 @@
 				</ul>
 				</description>
 		</entry>
-		<entry name="3. Get Command Format">
+		<entry name="3. Loading and saving">
+			<description>
+				The objects you can save or load are <m><b>pattern</b></m>, <m><b>kit</b></m>, <m><b>sound</b></m>, <m><b>global</b></m> and <m><b>settings</b></m>.
+				<br/>
+				<br/>
+				The work buffer versions of these objects are not available to save or load.
+				<br/>
+				<br/>
+				Important notes about paths and files:
+				<ul>
+				    <li><m><b>~</b></m> in relative paths are accepted. <m><b>.</b></m> is pointing to <m><b>/Users/&lt;my-user&gt;/Desktop</b></m> in my mac computer but I didn't test it on other systems. You may find information by enabling debug logs and running max from the command line to discover the current working directory.</li>
+				    <li><m><b>.rytm</b></m> files are internally large <m><b>JSON</b></m> (~62mb) files and in my opinion they are not very useful but the feature is there to use.</li>
+				    <li><m><b>.sysex</b></m> files by nature store the index of the saved object also. E.g. saving kit 1 and loading it would load the saved kit to the same index (1). Current version does not support loading to a different index but if it becomes a necessity it can be added.</li>
+				</ul>
+			</description>
+		</entry>
+		<entry name="4. Get Command Format">
 			<description>
 				The get command is used to get data from the <m><b>rytm</b></m> external. 
 				<h1>Output</h1> 
@@ -552,7 +624,7 @@
 			</ul>
 			</description>
 		</entry>
-		<entry name="4. Set Command Format">
+		<entry name="5. Set Command Format">
 			<description>
 				The set command is used to send data to <m><b>rytm</b></m> external.
 				<h1>Pattern</h1>
@@ -719,7 +791,7 @@
 				</ul>
 			</description>
 		</entry>
-		<entry name="5. Identifiers">
+		<entry name="6. Identifiers">
 			<description>
 				<h1>Common identifiers</h1>
 				<ul>
@@ -760,7 +832,7 @@
 					<li><m><b>accent</b></m> -> <m><b>int</b></m>, <i>0..=1</i></li>
 					<li><m><b>swing</b></m> -> <m><b>int</b></m>, <i>0..=1</i></li>
 					<li><m><b>slide</b></m> -> <m><b>int</b></m>, <i>0..=1</i></li>
-					<li><m><b>note</b></m> -> <m><b>int</b></m>, <i>0..=127</i></li>
+					<li><m><b>note</b></m> -> <m><b>int</b></m>, <i>36..=84</i></li>
 					<li><m><b>vel</b></m> -> <m><b>int</b></m>, <i>1..=127</i></li>
 					<li><m><b>retrigveloffset</b></m> -> <m><b>int</b></m>, <i>-128..=127</i></li>
 					<li><m><b>soundlock</b></m> -> <m><b>int</b></m>, <i>0..=127</i></li>
@@ -889,7 +961,7 @@
 				</ul>
 			</description>
 		</entry>
-		<entry name="6. Enums">
+		<entry name="7. Enums">
 			<description>
 				<h1>Pattern</h1>
 				<h3>
