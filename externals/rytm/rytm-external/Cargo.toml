@@ -1,7 +1,7 @@
 [package]
 name = "rytm-external"
 version = "0.1.0"
-authors = [ "Ali Somay <alisomay@runbox.com>" ]
+authors = ["Ali Somay <alisomay@runbox.com>"]
 edition = "2021"
 
 [lib]
@@ -25,5 +25,4 @@ tracing-core = "0.1"
 parking_lot = "0.12"
 tracing-error = "0.2"
 camino = "1"
-tilde-expand = "0.1.1"
-
+homedir = "0.3"

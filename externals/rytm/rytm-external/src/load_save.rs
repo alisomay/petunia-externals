@@ -3,7 +3,6 @@ use crate::{
     file::{FilePathExt, RytmProjectFileType},
     traits::Post,
     types::{SaveTarget, SaveTargetIndex},
-    utils::make_utf8_path_buf_respect_tilde,
     RytmExternal,
 };
 use camino::Utf8PathBuf;
@@ -59,8 +58,8 @@ impl RytmExternal {
             .last()
             .map(median::atom::Atom::get_symbol)
             .unwrap_or_default();
-        let maybe_path =
-            make_utf8_path_buf_respect_tilde(&maybe_path_symbol.to_string().unwrap_or_default());
+        let maybe_path = self
+            .make_utf8_path_buf_respect_tilde(&maybe_path_symbol.to_string().unwrap_or_default());
 
         let path_is_provided = !maybe_path.as_str().is_empty();
         if path_is_provided {
@@ -71,8 +70,12 @@ impl RytmExternal {
         debug!("Trying to load from: {}.", maybe_path);
 
         // Check existence and file-ness.
-        let path_exists = make_utf8_path_buf_respect_tilde(maybe_path.as_str()).exists();
-        let path_is_file = make_utf8_path_buf_respect_tilde(maybe_path.as_str()).is_file();
+        let path_exists = self
+            .make_utf8_path_buf_respect_tilde(maybe_path.as_str())
+            .exists();
+        let path_is_file = self
+            .make_utf8_path_buf_respect_tilde(maybe_path.as_str())
+            .is_file();
         let path = if path_exists && path_is_file {
             maybe_path_symbol
         } else {
@@ -200,7 +203,8 @@ impl RytmExternal {
             Some(RytmValue::Symbol(path_or_save_target)) => {
                 if values.len() == 1 {
                     // Consider this as a file path or user didn't pass anything in, act accordingly.
-                    let maybe_valid_path = make_utf8_path_buf_respect_tilde(path_or_save_target);
+                    let maybe_valid_path =
+                        self.make_utf8_path_buf_respect_tilde(path_or_save_target);
                     let save_file_type = if path_or_save_target.is_empty() {
                         RytmProjectFileType::Rytm
                     } else {
@@ -235,7 +239,7 @@ impl RytmExternal {
                 } else if values.len() > 1 && values.len() <= 3 {
                     // Check if the last argument is path like and has an extension.
                     if let RytmValue::Symbol(maybe_path) = values_b.next().unwrap() {
-                        let maybe_valid_path = make_utf8_path_buf_respect_tilde(maybe_path);
+                        let maybe_valid_path = self.make_utf8_path_buf_respect_tilde(maybe_path);
                         if let Some(ext) = maybe_valid_path.extension() {
                             if ext.parse::<RytmProjectFileType>().is_err() {
                                 return Err(RytmExternalError::from("File Error: Invalid file type. Only .rytm or .sysex files are allowed.")).inspect_err(|err| error!("{}", err));
@@ -290,7 +294,7 @@ impl RytmExternal {
 
                     if let Some(RytmValue::Symbol(must_be_path)) = values_f.next() {
                         // Consider this as a file path or user didn't pass anything in, act accordingly.
-                        let maybe_valid_path = make_utf8_path_buf_respect_tilde(must_be_path);
+                        let maybe_valid_path = self.make_utf8_path_buf_respect_tilde(must_be_path);
                         let save_file_type = if must_be_path.is_empty() {
                             None
                         } else {
