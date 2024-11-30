@@ -1,11 +1,9 @@
-env_files = [
-    { path = "./.env", profile = "release" },
-]
+env_files = [{ path = "./.env", profile = "release" }]
 
 # vim: set ts=4 sw=4 expandtab:
 [config]
 default_to_workspace = false
-additional_profiles = [ "release" ]
+additional_profiles = ["release"]
 
 ## Environment setup, some will get overridden in other tasks
 
@@ -14,7 +12,9 @@ CARGO_MAKE_CRATE_FS_NAME = "rytm"
 CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = ["rytm-external"]
 PACKAGE_TO_BUILD = "rytm-external"
 MAX_PACKAGE_NAME = "petunia"
-MAX_EXT_NAME = { value = "${CARGO_MAKE_CRATE_FS_NAME}", condition = { env_not_set = ["MAX_EXT_NAME"] } }
+MAX_EXT_NAME = { value = "${CARGO_MAKE_CRATE_FS_NAME}", condition = { env_not_set = [
+    "MAX_EXT_NAME",
+] } }
 MAX_EXT_BASE_NAME = "${MAX_EXT_NAME}"
 PLATFORM_INSTALL_DIR = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "ERROR", mapping = { "macos" = "${HOME}/Documents/Max 8/Packages", windows = "${USERPROFILE}/Documents/Max 8/Packages" } }
 EXTERNAL_INSTALL_DIR = "${PLATFORM_INSTALL_DIR}/${MAX_PACKAGE_NAME}/externals/"
@@ -30,7 +30,7 @@ IS_MAC_AARCH64 = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = 
 IS_MAC_X86 = { source = "${CARGO_MAKE_RUST_TARGET_TRIPLE}", default_value = "false", mapping = { "x86_64-apple-darwin" = "true" } }
 IS_WIN_X86 = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "false", mapping = { "windows" = "true" } }
 IS_TILDE = false
-WORKSPACE_TARGET_DIR = "target" 
+WORKSPACE_TARGET_DIR = "target"
 
 
 [env.development]
@@ -46,11 +46,11 @@ PROFILE_DIR = "release"
 [tasks.build-target]
 private = true
 args = [
-  "@@split(BUILD_ARGS,|)",
-  "--target",
-  "${TARGET_TRIPLE}",
-  "-p",
-  "${PACKAGE_TO_BUILD}"
+    "@@split(BUILD_ARGS,|)",
+    "--target",
+    "${TARGET_TRIPLE}",
+    "-p",
+    "${PACKAGE_TO_BUILD}",
 ]
 command = "cargo"
 
@@ -58,9 +58,15 @@ command = "cargo"
 clear = true
 dependencies = ["setup"]
 run_task = [
-    { name = "build-windows", condition = { env_true = ["IS_WIN_X86"] } },
-    { name = "build-mac-x86", condition = { env_true = ["IS_MAC_X86"] } },
-    { name = "build-mac-aarch64", condition = { env_true = ["IS_MAC_AARCH64"] } },
+    { name = "build-windows", condition = { env_true = [
+        "IS_WIN_X86",
+    ] } },
+    { name = "build-mac-x86", condition = { env_true = [
+        "IS_MAC_X86",
+    ] } },
+    { name = "build-mac-aarch64", condition = { env_true = [
+        "IS_MAC_AARCH64",
+    ] } },
 ]
 
 [tasks.build-windows]
@@ -89,6 +95,19 @@ cp "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}/PkgInfo" "${PROFILE_EX
 lipo -create -output "${PROFILE_EXTERNAL_PATH}/Contents/MacOS/${PACKAGED_LIB_FILE_NAME}" "${WORKSPACE_TARGET_DIR}/${TARGET_TRIPLE_MAC_X86}/${PROFILE_DIR}/${LIB_FILE_NAME}" "${WORKSPACE_TARGET_DIR}/${TARGET_TRIPLE_MAC_AARCH64}/${PROFILE_DIR}/${LIB_FILE_NAME}"
 '''
 
+# Add universal signing task that uses the profile-dependent signing
+[tasks.sign-mac-universal]
+dependencies = ["build-mac-universal"]
+run_task = [
+    { name = "codesign-ad-hoc", condition = { profiles = [
+        "development",
+    ] } },
+    { name = "codesign-with-dev-id", condition = { profiles = [
+        "release",
+    ] } },
+]
+
+
 ## Pre build Setup
 
 [tasks.env-mac]
@@ -107,8 +126,12 @@ env = { "LIB_FILE_NAME" = "${PLATFORM_DYLIB_PREFIX}${CARGO_MAKE_CRATE_FS_NAME}.$
 
 [tasks.setup]
 run_task = [
-    { name = "env-windows", condition = { platforms = ["windows"] } },
-    { name = "env-mac", condition = { platforms = ["mac"] } }
+    { name = "env-windows", condition = { platforms = [
+        "windows",
+    ] } },
+    { name = "env-mac", condition = { platforms = [
+        "mac",
+    ] } },
 ]
 
 ## Post build setup
@@ -167,7 +190,7 @@ cp "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}/PkgInfo" "${PROFILE_EX
 '''
 
 [tasks.codesign-ad-hoc]
-condition = { profiles = [ "development" ] }
+condition = { profiles = ["development"] }
 private = true
 clear = true
 script_runner = "@shell"
@@ -176,27 +199,55 @@ codesign -f -s - "${PROFILE_EXTERNAL_PATH}"
 '''
 
 [tasks.codesign-with-dev-id]
-condition = { profiles = [ "release" ] }
+condition = { profiles = ["release"] }
 private = true
 clear = true
 script_runner = "@shell"
 script = '''
-codesign -f -v -s "${DEVELOPER_ID}" --entitlements "${ENTITLEMENTS}" --timestamp --options=runtime "${PROFILE_EXTERNAL_PATH}" && echo "Signed ${PROFILE_EXTERNAL_PATH}"
+codesign --deep -f -v -s "${DEVELOPER_ID}" \
+         --entitlements "${ENTITLEMENTS}" \
+         --timestamp \
+         --options=runtime \
+         "${PROFILE_EXTERNAL_PATH}" && echo "Signed ${PROFILE_EXTERNAL_PATH}" && \
+         codesign --verify --verbose=4 ${PROFILE_EXTERNAL_PATH} && \
+         codesign -d --entitlements :- --verbose=4 ${PROFILE_EXTERNAL_PATH}
 '''
 
 [tasks.package]
 dependencies = ["build", "name-env"]
 clear = true
 run_task = [
-    { name = ["package-mac", "codesign-ad-hoc"], condition = { platforms = ["mac"], profiles = ["development"] } },
-    { name = ["package-mac", "codesign-with-dev-id"], condition = { platforms = ["mac"], profiles = ["release"] } },
-    { name = "package-windows", condition = { platforms = ["windows"] } },
+    { name = [
+        "package-mac",
+        "codesign-ad-hoc",
+    ], condition = { platforms = [
+        "mac",
+    ], profiles = [
+        "development",
+    ] } },
+    { name = [
+        "package-mac",
+        "codesign-with-dev-id",
+    ], condition = { platforms = [
+        "mac",
+    ], profiles = [
+        "release",
+    ] } },
+    { name = "package-windows", condition = { platforms = [
+        "windows",
+    ] } },
 ]
 
 [tasks.package-all]
 clear = true
 run_task = [
-    { name = ["package-windows", "build-mac-universal", "copy-all"], condition = { platforms = ["mac"] } },
+    { name = [
+        "package-windows",
+        "build-mac-universal",
+        "sign-mac-universal",     # Add signing step for universal binary
+        "extend-package-members",
+        "copy-all",
+    ], condition = { platforms = ["mac"] } },
 ]
 
 [tasks.copy-all]
@@ -205,7 +256,12 @@ private = true
 # env = { "PACKAGE_DIR" = "${WORKSPACE_TARGET_DIR}/${PROFILE_DIR}/${MAX_PACKAGE_NAME}" }
 env = { "PACKAGE_DIR" = "${CARGO_MAKE_WORKING_DIRECTORY}/${MAX_PACKAGE_NAME}" }
 run_task = [
-    { name = ["extend-package-members", "copy-all-packages"], condition = { platforms = ["mac"] } },
+    { name = [
+        "extend-package-members",
+        "copy-all-packages",
+    ], condition = { platforms = [
+        "mac",
+    ] } },
 ]
 
 [tasks.copy-all-packages]
@@ -252,12 +308,29 @@ cp -r "${PROFILE_EXTERNAL_PATH}" "${EXTERNAL_INSTALL_DIR}"
 
 [tasks.install-universal.mac]
 clear = true
-dependencies = ["build-mac-universal", "extend-package-members", "install-package-members",]
+dependencies = [
+    "build-mac-universal",
+    "sign-mac-universal",      # Add signing step
+    "extend-package-members",
+    "install-package-members",
+]
 script_runner = "@shell"
 script = '''
 mkdir -p "${EXTERNAL_INSTALL_DIR}"
 cp -r "${PROFILE_EXTERNAL_PATH}" "${EXTERNAL_INSTALL_DIR}"
 '''
+
+[tasks.install]
+clear = true
+run_task = [
+    { name = "install.windows", condition = { platforms = [
+        "windows",
+    ] } },
+    { name = "install-universal.mac", condition = { platforms = [
+        "mac",
+    ] } },
+]
+
 
 [tasks.install-package-members.mac]
 condition = { files_exist = ["${PACKAGE_MEMBERS_DIR}/"] }
@@ -274,5 +347,3 @@ script = '''
 cp "${CARGO_MAKE_WORKING_DIRECTORY}/README.md" "${PACKAGE_MEMBERS_DIR}/readme.md"
 cp "${CARGO_MAKE_WORKING_DIRECTORY}/LICENSE" "${PACKAGE_MEMBERS_DIR}/license.md"
 '''
-
-
