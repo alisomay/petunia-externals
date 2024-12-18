@@ -38,6 +38,7 @@ use median::{
     wrapper::MaxObjWrapper,
 };
 use rytm_object::{api::Response, types::CommandType, value::RytmValue, RytmObject};
+use rytm_rs::RytmProject;
 use std::sync::{
     atomic::{AtomicIsize, Ordering},
     Arc,
@@ -82,11 +83,12 @@ impl RytmExternal {
     const SELECTOR_SET: &'static str = "set";
     const SELECTOR_GET: &'static str = "get";
     const SELECTOR_LOG_LEVEL: &'static str = "loglevel";
+    const SELECTOR_COPY: &'static str = "copy";
+    const SELECTOR_RESET: &'static str = "reset";
 
     // TODO: Implementations for these are sketches.
     // For proper impl move some of the logic to the RytmObject.
     // Make nice interfaces with proper error handling management here.
-
     const SELECTOR_LOAD: &'static str = "load";
     const SELECTOR_SAVE: &'static str = "save";
 
@@ -133,6 +135,8 @@ impl RytmExternal {
                     Self::SELECTOR_LOG_LEVEL,
                     Self::SELECTOR_LOAD,
                     Self::SELECTOR_SAVE,
+                    Self::SELECTOR_COPY,
+                    Self::SELECTOR_RESET
                 ].join(", ");
                 match selector.as_str() {
                     Self::SELECTOR_QUERY => self.query(atoms),
@@ -142,6 +146,8 @@ impl RytmExternal {
                     Self::SELECTOR_LOG_LEVEL => self.change_log_level(atoms),
                     Self::SELECTOR_LOAD => self.load(atoms),
                     Self::SELECTOR_SAVE => self.save(atoms),
+                    Self::SELECTOR_COPY => self.copy(atoms),
+                    Self::SELECTOR_RESET => self.reset(atoms),
                     _ => Err(format!("Parse Error: Invalid command type {selector}. Possible commands are {possible_selectors}.").into()),
                 }.inspect_err(|_| {
                     if selector.as_str() != Self::SELECTOR_LOG_LEVEL {
@@ -250,6 +256,38 @@ impl RytmExternal {
     }
 
     #[instrument(skip_all)]
+    pub fn copy(&self, atoms: &[Atom]) -> Result<(), RytmExternalError> {
+        self.response_to_outlet(
+            self.inner
+                .command(CommandType::Copy, self.get_rytm_values(atoms)?)?,
+        )
+        .ok();
+
+        Ok(())
+    }
+
+    #[instrument(skip_all)]
+    pub fn reset(&self, atoms: &[Atom]) -> Result<(), RytmExternalError> {
+        if !atoms.is_empty() {
+            let warning =
+                "Warning: Reset command does not accept any arguments. Ignoring the arguments.";
+            self.send_status_warning();
+            warn!("{}", warning);
+            warning.obj_warn(self.max_obj());
+        }
+
+        if let Ok(p) = RytmProject::try_default().inspect_err(|err| {
+            let err = format!("Error creating new RytmProject while resetting: {err}");
+            self.send_status_error();
+            error!("{}", err);
+            err.obj_error(self.max_obj());
+        }) {
+            *self.inner.project.lock() = p;
+        }
+        Ok(())
+    }
+
+    #[instrument(skip_all)]
     #[log_errors]
     fn get_rytm_values(
         &self,
@@ -310,6 +348,13 @@ impl RytmExternal {
                     value.as_atom(),
                 ][..],
             ),
+            Response::Unsupported(reason) => {
+                self.send_status_warning();
+                let warning = format!("Warning: Unsupported action. Rytm will currently ignore this command. Reason: {reason}");
+                warning.obj_warn(self.max_obj());
+                warn!("{}", warning);
+                Ok(())
+            }
             Response::Ok => Ok(()),
         }
         .inspect_err(|_| {

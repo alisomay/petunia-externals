@@ -16,6 +16,17 @@ TEAM_ID := env_var('TEAM_ID')
 
 notarize:
     #!/usr/bin/env bash
+
+    cleanup() {
+        local dir="{{justfile_directory()}}/petunia/externals"
+        echo "🧹 Cleaning up artifacts..."
+        rm -f "${dir}/rytm.zip"
+        rm -f "${dir}/rytm_notarization.log"
+    }
+
+    # Register cleanup function to run on script exit
+    trap cleanup EXIT
+
     set -euo pipefail
     cd {{justfile_directory()}}/petunia/externals
     rm -f rytm.zip

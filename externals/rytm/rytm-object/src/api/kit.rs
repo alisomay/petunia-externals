@@ -137,6 +137,42 @@ pub fn handle(
                 }
             }
         }
+        CommandType::Copy => {
+            match next_token {
+                Some(ParsedValue::CopyTargetIndex(target_index)) => {
+                    let target_index = *target_index;
+                    if let Some(i) = index {
+                        if i == target_index {
+                            return Ok(Response::Ok);
+                        }
+                        let source = guard.kits()[i].clone();
+                        let target = &mut guard.kits_mut()[target_index];
+                        target.copy_data_from(&source);
+                    } else {
+                        let source = guard.work_buffer().kit().clone();
+                        let target = &mut guard.kits_mut()[target_index];
+                        target.copy_data_from(&source);
+                    }
+                }
+                None => {
+                    // Copy to work buffer
+                    if let Some(i) = index {
+                        let source = guard.kits()[i].clone();
+                        let target = guard.work_buffer_mut().kit_mut();
+                        target.copy_data_from(&source);
+                    } else {
+                        // We're not going to copy from work buffer to work buffer.
+                        // It's a no-op.
+                        return Ok(Response::Ok);
+                    }
+                }
+                _ => {
+                    unreachable!("Parser should take care of this. Invalid copy format.")
+                }
+            }
+
+            return Ok(Response::Ok);
+        }
     }
 }
 

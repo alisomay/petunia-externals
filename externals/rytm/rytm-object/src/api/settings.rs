@@ -52,6 +52,9 @@ pub fn handle(
                 }
             }
         }
+        CommandType::Copy => Ok(Response::Unsupported(
+            "Copy command is not supported for settings object".into(),
+        )),
     }
 }
 

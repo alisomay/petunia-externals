@@ -38,6 +38,10 @@ pub enum ParseError {
         "Parse Error: Query selector index missing or invalid: This query selector must be followed by an integer index."
     )]
     QuerySelectorIndexMissingOrInvalid,
+    #[error("Parse Error: Command needs to be followed by an index.")]
+    CommandNeedsIndex,
+    #[error("Parse Error: copy command is not supported for settings object since the settings object is global.")]
+    CopyCommandNotSupportedForSettings,
 
     #[error("Parse Error: Parameter lock operation {0} is invalid. {1}")]
     InvalidPlockOperation(String, String),

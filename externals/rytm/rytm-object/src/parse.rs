@@ -53,6 +53,63 @@ pub fn parse_command(
     // Add the object type to the result
     result.push(ParsedValue::ObjectType(object_type_selector));
 
+    // Handle special case for 'copy' command
+    if let CommandType::Copy = command_type {
+        if values.len() > 3 {
+            return Err(ParseError::InvalidFormat(
+                "Copy command only supports a maximum of 3 arguments.".to_owned(),
+            ))
+            .inspect_err(|err| {
+                error!("{}", err);
+            });
+        }
+        match iter.next() {
+            Some(RytmValue::Int(target_index)) => {
+                match object_type_selector {
+                    ObjectTypeSelector::Pattern(_) | ObjectTypeSelector::PatternWorkBuffer => {
+                        validate_index(target_index, 0, 127, "Pattern index")?;
+                    }
+                    ObjectTypeSelector::Kit(_) | ObjectTypeSelector::KitWorkBuffer => {
+                        validate_index(target_index, 0, 127, "Kit index")?;
+                    }
+                    ObjectTypeSelector::Sound(_) | ObjectTypeSelector::SoundWorkBuffer(_) => {
+                        validate_index(target_index, 0, 127, "Sound index")?;
+                    }
+                    ObjectTypeSelector::Global(_) | ObjectTypeSelector::GlobalWorkBuffer => {
+                        validate_index(target_index, 0, 3, "Global index")?;
+                    }
+                    ObjectTypeSelector::Settings => {
+                        return Err(ParseError::CopyCommandNotSupportedForSettings).inspect_err(
+                            |err| {
+                                error!("{}", err);
+                            },
+                        );
+                    }
+                }
+
+                result.push(ParsedValue::CopyTargetIndex(*target_index as usize));
+                return Ok(result);
+            }
+            None => {
+                if !object_type_selector.is_indexable() {
+                    return Err(ParseError::InvalidFormat(
+                        "Copying work buffer object to a stored object requires a target index."
+                            .to_owned(),
+                    ))
+                    .inspect_err(|err| {
+                        error!("{}", err);
+                    });
+                }
+                return Ok(result);
+            }
+            _ => {
+                return Err(ParseError::InvalidFormat("Copy command requires either an integer index or nothing which would make the copy target the work buffer target.".to_owned())).inspect_err(|err| {
+                    error!("{}", err);
+                });
+            }
+        }
+    }
+
     // Continue parsing the remainder of the command
     parse_remainder(command_type, &object_type_selector, &mut iter, &mut result)?;
 
@@ -1105,7 +1162,6 @@ mod tests {
     }
 
     #[test]
-
     fn test_set_focused_parse_requires_enum_values() {
         // set focused sequencermode
         let values = vec![

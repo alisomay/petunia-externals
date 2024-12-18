@@ -635,5 +635,6 @@ pub enum Response {
         key: RytmValue,
         value: RytmValue,
     },
+    Unsupported(String),
     Ok,
 }

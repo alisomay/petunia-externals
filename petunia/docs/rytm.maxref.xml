@@ -347,6 +347,47 @@
         	</description>
 		</method>
 
+		<method name="copy">
+			<arglist>
+				<arg name="object-type" optional="0" type="symbol" />
+				<arg name="index" optional="0" type="int" />
+				<arg name="target-index" optional="1" type="int" />
+			</arglist>
+			<digest>
+	            Copy a pattern or kit to another target.
+        	</digest>
+			<description>
+				The copy format is used to copy full patterns and kits in the external.
+	            <br/>
+	            <br/>				
+	            Format: <m><b>save &lt;object&gt; &lt;index&gt; [&lt;target-index&gt;]</b></m>
+	            <br/>
+	            <br/>
+				Depending on the type of the object <m><b>&lt;index&gt;</b></m> can be either a source index or a target index.
+				For work buffer objects <m><b>&lt;index&gt;</b></m> is the target index. On the other hand for non-work buffer objects <m><b>&lt;index&gt;</b></m> is the source index.
+				<br/>
+				<br/>
+				Examples:
+	            <ul>
+	                <li><m><b>copy pattern 1 2</b></m></li>
+	                <li><m><b>copy pattern 1</b></m> - <em>Copies the pattern to the work buffer.</em></li>
+	                <li><m><b>copy kit 1 2</b></m></li>
+	                <li><m><b>copy kit 1</b></m> - <em>Copies the kit to the work buffer.</em></li>
+					<li><m><b>copy pattern_wb 1</b></m></li>
+					<li><m><b>copy kit_wb 1</b></m></li>
+	            </ul>
+        	</description>
+		</method>
+
+		<method name="reset">
+			<digest>
+	            Reset the rytm object to the default state.
+        	</digest>
+			<description>
+				Reset the rytm object to the default state.
+        	</description>
+		</method>
+
 		<method name="loglevel">
 			<arglist>
 				<arg name="level" optional="0" type="symbol" />
@@ -421,6 +462,8 @@
 							<li><m><b>set</b></m> Sets data to the <o>rytm</o> external.</li>
 							<li><m><b>load</b></m> Loads either full or partial project data using <m><b>.rytm</b></m> or <m><b>.sysex</b></m> files.</li>
 							<li><m><b>save</b></m> Saves either full or partial project data using <m><b>.rytm</b></m> or <m><b>.sysex</b></m> files.</li>
+							<li><m><b>copy</b></m> Copies a pattern or kit to another.</li>
+							<li><m><b>reset</b></m> Resets the <o>rytm</o> external to its default state.</li>
 							<li><m><b>loglevel</b></m> <o>rytm</o> also logs to stdout with different levels of verbosity using <a href="https://docs.rs/tracing/latest/tracing/">tracing</a>, this selector is used to set the log level in runtime.</li>
 						</ul>
 					</li>

@@ -62,6 +62,9 @@ pub fn handle(
                 }
             }
         }
+        CommandType::Copy => Ok(Response::Unsupported(
+            "Currently copy command is not supported for global object. If you need this badly please open an issue and implementation will be considered.".into(),
+        )),
     }
 }
 

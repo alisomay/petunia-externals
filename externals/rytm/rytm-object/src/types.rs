@@ -5,6 +5,7 @@ use std::str::FromStr;
 pub enum CommandType {
     Get,
     Set,
+    Copy,
 }
 
 impl FromStr for CommandType {
@@ -14,6 +15,7 @@ impl FromStr for CommandType {
         match s {
             "get" => Ok(Self::Get),
             "set" => Ok(Self::Set),
+            "copy" => Ok(Self::Copy),
             other => Err(ParseError::InvalidCommandType(other.to_owned())),
         }
     }

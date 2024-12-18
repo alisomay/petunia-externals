@@ -105,6 +105,11 @@ pub fn handle(
                 }
             }
         }
+
+        // TODO: Implement for the release!
+        CommandType::Copy => Ok(Response::Unsupported(
+            "Currently copy is not supported for sounds. If you need this badly please open an issue and implementation will be considered.".into(),
+        )),
     }
 }
 

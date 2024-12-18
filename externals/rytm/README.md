@@ -146,9 +146,14 @@ Accepted formats are:
 This is done by starting our messages with `get` selector.
 The details of the format and the output format are explained in the [api docs](API_DOCS.md).
 
-#### Setting data in the `rytm` external
+#### Setting data in `rytm` external
 
 This is done by starting our messages with `set` selector.
+The details of the format and the input format are explained in the [api docs](API_DOCS.md).
+
+#### Copying patterns and kits in `rytm` external
+
+This is done by starting our messages with `copy` selector.
 The details of the format and the input format are explained in the [api docs](API_DOCS.md).
 
 #### Parameter locking

@@ -31,6 +31,8 @@ Also do not forget to check the max help files and max reference for the `rytm` 
   - `set` Sets data to the `rytm` external.
   - `load` Loads either full or partial project data using `.rytm` or `.sysex` files.
   - `save` Saves either full or partial project data using `.rytm` or `.sysex` files.
+  - `copy` Copies full patterns and kits in the external.
+  - `reset` Resets the external to its default state.
   - `loglevel` `rytm` also logs to stdout with different levels of verbosity using [`tracing`](https://docs.rs/tracing/latest/tracing/) this selector is used to set the log level in runtime.
 - `<object-type>` A symbol which defines the type of the object.
   - `pattern` A pattern.
@@ -116,6 +118,24 @@ Examples:
 - `save pattern 1 ~/Desktop/pattern_1.sysex`
 - `save ~/Desktop/project.rytm`
 - `save settings ~/Desktop/settings.sysex`
+
+## Copy format
+
+The copy format is used to copy full patterns and kits in the external.
+
+`copy <object> <index> [<target-index>]`
+
+Depending on the type of the object `<index>` can be either a source index or a target index.
+For work buffer objects `<index>` is the target index. On the other hand for non-work buffer objects `<index>` is the source index.
+
+Examples:
+
+- `copy pattern 1 2`
+- `copy pattern 1` -> _Copies the pattern to the work buffer._
+- `copy kit 1 2`
+- `copy kit 1` -> _Copies the kit to the work buffer._
+- `copy pattern_wb 1`
+- `copy kit_wb 1`
 
 ## Get format
 

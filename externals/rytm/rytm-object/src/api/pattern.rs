@@ -29,6 +29,43 @@ pub fn handle(
 
     let mut tokens = tokens[1..].iter();
 
+    if let CommandType::Copy = command_type {
+        match tokens.next() {
+            Some(ParsedValue::CopyTargetIndex(target_index)) => {
+                let target_index = *target_index;
+                if let Some(i) = index {
+                    if i == target_index {
+                        return Ok(Response::Ok);
+                    }
+                    let source = guard.patterns()[i].clone();
+                    let target = &mut guard.patterns_mut()[target_index];
+                    target.copy_data_from(&source);
+                } else {
+                    let source = guard.work_buffer().pattern().clone();
+                    let target = &mut guard.patterns_mut()[target_index];
+                    target.copy_data_from(&source);
+                }
+            }
+            None => {
+                // Copy to work buffer
+                if let Some(i) = index {
+                    let source = guard.patterns()[i].clone();
+                    let target = guard.work_buffer_mut().pattern_mut();
+                    target.copy_data_from(&source);
+                } else {
+                    // We're not going to copy from work buffer to work buffer.
+                    // It's a no-op.
+                    return Ok(Response::Ok);
+                }
+            }
+            _ => {
+                unreachable!("Parser should take care of this. Invalid copy format.")
+            }
+        }
+
+        return Ok(Response::Ok);
+    }
+
     match tokens.next() {
         Some(ParsedValue::TrackIndex(track_index)) => match tokens.next() {
             Some(ParsedValue::TrigIndex(trig_index)) => match tokens.next() {
@@ -48,6 +85,7 @@ pub fn handle(
                 Some(ident_or_enum) => {
                     // Treat as trig and apply the command.
                     match command_type {
+                        CommandType::Copy => unreachable!("Copy command should be handled before."),
                         CommandType::Get => {
                             let object = index.map_or_else(
                                 || {
@@ -115,6 +153,7 @@ pub fn handle(
             Some(ident_or_enum) => {
                 // Treat as track and apply the command.
                 match command_type {
+                    CommandType::Copy => unreachable!("Copy command should be handled before."),
                     CommandType::Get => {
                         let object = index.map_or_else(
                             || &guard.work_buffer().pattern().tracks()[*track_index],
@@ -171,6 +210,7 @@ pub fn handle(
         Some(ident_or_enum) => {
             // Treat as pattern and apply the command.
             match command_type {
+                CommandType::Copy => unreachable!("Copy command should be handled before."),
                 CommandType::Get => {
                     let object = index
                         .map_or_else(|| guard.work_buffer().pattern(), |i| &guard.patterns()[i]);

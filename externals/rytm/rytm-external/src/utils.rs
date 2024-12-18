@@ -1,9 +1,8 @@
+use crate::{traits::Post, RytmExternal};
 use camino::Utf8PathBuf;
 use homedir::my_home;
 use median::object::MaxObj;
 use tracing::{debug, instrument, warn};
-
-use crate::{traits::Post, RytmExternal};
 
 impl RytmExternal {
     #[instrument(

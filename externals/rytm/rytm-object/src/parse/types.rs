@@ -67,6 +67,10 @@ pub enum ParsedValue {
     ElementIndex(usize),
     /// A plock operation (e.g., "plockget", "plockset", "plockclear")
     PlockOperation(PlockOperation),
+    /// The target index for a copy operation
+    CopySourceIndex(usize),
+    /// The target index for a copy operation
+    CopyTargetIndex(usize),
 }
 
 impl std::fmt::Display for ParsedValue {
@@ -85,6 +89,8 @@ impl std::fmt::Display for ParsedValue {
             ParsedValue::Element(s) => write!(f, "{}", s),
             ParsedValue::ElementIndex(i) => write!(f, "{}", i),
             ParsedValue::PlockOperation(s) => write!(f, "{}", s),
+            ParsedValue::CopyTargetIndex(i) => write!(f, "{}", i),
+            ParsedValue::CopySourceIndex(i) => write!(f, "{}", i),
         }
     }
 }
