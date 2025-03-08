@@ -4,7 +4,7 @@
   "version": "0.2.0",
   "author": "Ali Somay",
   "authors": [],
-  "description": "An eclectic collection of externals from me which are proved to be useful and interesting in my musical journey.<br/><br/>This package adheres to semantic versioning. Details on https://semver.org.<br/><br/><b>List of externals:</b><br/><ul><li><b>rytm</b>: Enables communication with Elektron Analog Rytm MKII which is <b>running OS 1.70</b> over sysex api.<br/>The source code could be found in https://github.com/alisomay/petunia-externals/tree/main/externals/rytm.</li></ul>",
+  "description": "An eclectic collection of externals which are proved to be useful and interesting in the author's musical journey. This package adheres to semantic versioning. Details on https://semver.org. Briefly about the externals, rytm enables communication with an Elektron Analog Rytm MKII which runs OS 1.70 over it's sysex api. The source code could be found in https://github.com/alisomay/petunia-externals/tree/main/externals/rytm.",
   "tags": ["petunia", "communication", "midi", "elektron", "rytm"],
   "website": "https://petunia.audio",
   "extends": "",
